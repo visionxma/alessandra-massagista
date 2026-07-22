@@ -791,8 +791,8 @@ a { color: inherit; text-decoration: none; }
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: linear-gradient(135deg, #2ea86b, #1f8f57);
-  color: #fff;
+  background: linear-gradient(135deg, #d9b47c, var(--gold) 55%, #8a5d1f);
+  color: #241a0f;
   box-shadow: 0 14px 34px rgba(20, 17, 14, 0.3);
   transition: transform 0.4s var(--ease), box-shadow 0.4s ease;
 }
@@ -806,8 +806,8 @@ a { color: inherit; text-decoration: none; }
 }
 
 @keyframes wa-pulse {
-  0%, 100% { box-shadow: 0 14px 34px rgba(20, 17, 14, 0.3), 0 0 0 0 rgba(46, 168, 107, 0.35); }
-  50% { box-shadow: 0 14px 34px rgba(20, 17, 14, 0.3), 0 0 0 14px rgba(46, 168, 107, 0); }
+  0%, 100% { box-shadow: 0 14px 34px rgba(20, 17, 14, 0.3), 0 0 0 0 rgba(201, 162, 106, 0.45); }
+  50% { box-shadow: 0 14px 34px rgba(20, 17, 14, 0.3), 0 0 0 14px rgba(201, 162, 106, 0); }
 }
 
 /* ---------- parallax discreto (scroll-driven, com fallback) ---------- */

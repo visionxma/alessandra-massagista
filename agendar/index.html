@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Agendar horário | Alessandra Massagista</title>
+  <meta name="description" content="Escolha o dia e o horário para o seu atendimento com Alessandra, no Carlos Prates, Belo Horizonte." />
+  <meta name="theme-color" content="#f8f6f1" />
+  <link rel="canonical" href="https://visionxma.github.io/alessandra-massagista/agendar/" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="agendar.css" />
+</head>
+<body>
+
+  <header class="cabecalho">
+    <a class="voltar" href="../index.html" aria-label="Voltar ao site">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6"/></svg>
+    </a>
+    <div class="marca">
+      <span class="marca__nome">Alessandra</span>
+      <span class="marca__sub">Massagista</span>
+    </div>
+  </header>
+
+  <main class="conteudo">
+
+    <!-- PASSOS -->
+    <ol class="trilha" aria-label="Etapas do agendamento">
+      <li class="trilha__item trilha__item--ativo" data-passo="1"><span>1</span>Serviço</li>
+      <li class="trilha__item" data-passo="2"><span>2</span>Horário</li>
+      <li class="trilha__item" data-passo="3"><span>3</span>Seus dados</li>
+    </ol>
+
+    <!-- 1. SERVIÇO -->
+    <section class="passo" id="passo-1">
+      <h1>Qual massagem você prefere?</h1>
+      <div class="servicos" id="servicos"></div>
+    </section>
+
+    <!-- 2. HORÁRIO -->
+    <section class="passo" id="passo-2" hidden>
+      <h1>Escolha o melhor dia</h1>
+      <div class="dias" id="dias"></div>
+
+      <h2 class="sub">Horários disponíveis</h2>
+      <div class="horarios" id="horarios">
+        <p class="carregando">Carregando horários...</p>
+      </div>
+    </section>
+
+    <!-- 3. DADOS -->
+    <section class="passo" id="passo-3" hidden>
+      <h1>Quase lá</h1>
+      <div class="resumo" id="resumo"></div>
+
+      <form id="form" novalidate>
+        <label class="campo">
+          <span>Seu nome</span>
+          <input type="text" id="nome" required maxlength="80" autocomplete="name"
+                 placeholder="Como devo chamar você?" />
+        </label>
+        <label class="campo">
+          <span>Contato <em>(opcional)</em></span>
+          <input type="text" id="contato" maxlength="60" autocomplete="tel"
+                 placeholder="Telefone ou e-mail" />
+        </label>
+        <label class="campo">
+          <span>Alguma observação? <em>(opcional)</em></span>
+          <textarea id="obs" rows="3" maxlength="500"
+                    placeholder="Preferências ou algo que eu deva saber"></textarea>
+        </label>
+        <p class="erro" id="erro" hidden></p>
+        <button class="btn" type="submit" id="enviar">Confirmar agendamento</button>
+        <p class="nota">Você receberá a confirmação do horário em seguida.</p>
+      </form>
+    </section>
+
+    <!-- SUCESSO -->
+    <section class="passo sucesso" id="passo-ok" hidden>
+      <div class="selo-ok" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
+      </div>
+      <h1>Horário reservado</h1>
+      <p class="sucesso__texto" id="ok-texto">—</p>
+      <div class="cartao-ok" id="ok-detalhe"></div>
+      <p class="nota">Anote o horário. Em caso de imprevisto, avise com antecedência.</p>
+      <a class="btn btn--claro" href="../index.html">Voltar ao site</a>
+    </section>
+
+  </main>
+
+  <nav class="rodape-acao" id="rodape" hidden>
+    <button class="btn btn--claro" id="btn-voltar">Voltar</button>
+    <button class="btn" id="btn-avancar" disabled>Continuar</button>
+  </nav>
+
+  <script type="module" src="agendar.js"></script>
+</body>
+</html>

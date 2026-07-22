@@ -1,20 +1,7 @@
 /* ==========================================================================
-   Alessandra Massoterapia
+   Alessandra Massagista
+   Os botoes de agendamento apontam direto para /agendar/ no HTML.
    ========================================================================== */
-
-// Numero do WhatsApp (formato internacional, somente digitos). Troque aqui uma
-// unica vez e todos os botoes da pagina passam a usar o novo numero.
-const WHATSAPP_NUMERO = "5531987135506";
-const WHATSAPP_MENSAGEM = "Olá, Alessandra! Gostaria de agendar um horário.";
-
-const WHATSAPP_URL =
-  "https://wa.me/" + WHATSAPP_NUMERO + "?text=" + encodeURIComponent(WHATSAPP_MENSAGEM);
-
-document.querySelectorAll("[data-whatsapp]").forEach((el) => {
-  el.href = WHATSAPP_URL;
-  el.target = "_blank";
-  el.rel = "noopener";
-});
 
 /* ---------- navegacao: fundo ao rolar ---------- */
 

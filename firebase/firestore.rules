@@ -1,0 +1,92 @@
+rules_version = '2';
+
+// =====================================================================
+// Regras de seguranca - Agenda Alessandra
+//
+// Principio: o visitante do site pode PEDIR um horario, mas nunca
+// enxergar dados de outros clientes. So a Alessandra (autenticada)
+// le e gerencia a agenda.
+//
+// Cole em: Firebase Console > Firestore Database > Regras > Publicar
+// =====================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function autenticada() {
+      return request.auth != null;
+    }
+
+    function campos() {
+      return request.resource.data;
+    }
+
+    // -----------------------------------------------------------------
+    // servicos: qualquer um le (o site monta a lista), so a dona altera
+    // -----------------------------------------------------------------
+    match /servicos/{id} {
+      allow read: if true;
+      allow write: if autenticada();
+    }
+
+    // -----------------------------------------------------------------
+    // configuracao: horario de funcionamento, lido pelo site
+    // -----------------------------------------------------------------
+    match /configuracao/{id} {
+      allow read: if true;
+      allow write: if autenticada();
+    }
+
+    // -----------------------------------------------------------------
+    // agendamentos
+    //   - visitante: SO cria, e apenas com status pendente e origem site.
+    //     Nao pode ler, editar nem apagar nada.
+    //   - Alessandra: acesso total.
+    // -----------------------------------------------------------------
+    match /agendamentos/{id} {
+      allow read, update, delete: if autenticada();
+
+      allow create: if autenticada() || (
+           campos().status == 'pendente'
+        && campos().origem == 'site'
+        && campos().clienteNome is string
+        && campos().clienteNome.size() >= 2
+        && campos().clienteNome.size() <= 80
+        && campos().servicoNome is string
+        && campos().inicio is timestamp
+        && campos().fim is timestamp
+        && campos().inicio < campos().fim
+        // impede agendar no passado
+        && campos().inicio > request.time
+        // teto de 90 dias no futuro, evita lixo na agenda
+        && campos().inicio < request.time + duration.value(90, 'd')
+        && (!('observacoes' in campos()) || campos().observacoes.size() <= 500)
+      );
+    }
+
+    // -----------------------------------------------------------------
+    // horariosOcupados: espelho publico e anonimo dos horarios tomados.
+    // Serve para o site montar a grade sem expor quem agendou.
+    // Escrito apenas pela Cloud Function / pelo painel.
+    // -----------------------------------------------------------------
+    match /horariosOcupados/{id} {
+      allow read: if true;
+      allow write: if autenticada();
+    }
+
+    // -----------------------------------------------------------------
+    // bloqueios: folgas e compromissos pessoais.
+    // Leitura publica so para calcular horario livre (sem motivo exposto
+    // na interface do cliente).
+    // -----------------------------------------------------------------
+    match /bloqueios/{id} {
+      allow read: if true;
+      allow write: if autenticada();
+    }
+
+    // Nega tudo que nao foi declarado acima
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

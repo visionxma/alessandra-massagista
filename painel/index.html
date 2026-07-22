@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <title>Agenda | Alessandra</title>
+  <meta name="description" content="Painel de agendamentos" />
+  <meta name="robots" content="noindex, nofollow" />
+
+  <meta name="theme-color" content="#14110e" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Agenda" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/icone-180.png" />
+  <link rel="icon" href="icons/icone-192.png" />
+
+  <link rel="stylesheet" href="css/painel.css" />
+</head>
+<body>
+
+  <!-- ============ TELA DE ENTRADA ============ -->
+  <div class="entrada" id="tela-login">
+    <div class="entrada__cartao">
+      <div class="marca">
+        <span class="marca__nome">Alessandra</span>
+        <span class="marca__sub">Agenda</span>
+      </div>
+      <h1 class="entrada__titulo">Bem-vinda de volta</h1>
+      <p class="entrada__texto">Entre para ver os atendimentos de hoje.</p>
+
+      <form id="form-login" novalidate>
+        <label class="campo">
+          <span class="campo__rotulo">E-mail</span>
+          <input type="email" id="login-email" autocomplete="username"
+                 inputmode="email" required placeholder="seu@email.com" />
+        </label>
+        <label class="campo">
+          <span class="campo__rotulo">Senha</span>
+          <input type="password" id="login-senha" autocomplete="current-password"
+                 required placeholder="Sua senha" />
+        </label>
+        <p class="alerta" id="login-erro" hidden></p>
+        <button class="btn btn--principal btn--bloco" type="submit" id="btn-entrar">Entrar</button>
+      </form>
+
+      <p class="entrada__aviso" id="aviso-demo" hidden>
+        Modo demonstração: os dados ficam só neste aparelho.
+        <button class="link" type="button" id="btn-demo">Entrar assim mesmo</button>
+      </p>
+    </div>
+  </div>
+
+  <!-- ============ APLICATIVO ============ -->
+  <div class="app" id="app" hidden>
+
+    <header class="topo">
+      <div class="topo__linha">
+        <div>
+          <p class="topo__saudacao" id="saudacao">Bom dia</p>
+          <h1 class="topo__data" id="data-hoje">Hoje</h1>
+        </div>
+        <button class="icone-btn" id="btn-sair" aria-label="Sair da conta" title="Sair">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+        </button>
+      </div>
+      <p class="aviso-conexao" id="aviso-offline" hidden>Sem conexão. Mostrando os últimos dados.</p>
+    </header>
+
+    <main class="conteudo">
+
+      <!-- ---------- HOJE ---------- -->
+      <section class="aba" id="aba-hoje">
+        <div class="resumo" id="resumo">
+          <div class="resumo__item">
+            <span class="resumo__n" id="kpi-hoje">0</span>
+            <span class="resumo__rot">Hoje</span>
+          </div>
+          <div class="resumo__item resumo__item--atencao">
+            <span class="resumo__n" id="kpi-pendentes">0</span>
+            <span class="resumo__rot">A confirmar</span>
+          </div>
+          <div class="resumo__item">
+            <span class="resumo__n" id="kpi-concluidos">0</span>
+            <span class="resumo__rot">Concluídos</span>
+          </div>
+        </div>
+
+        <div class="proximo" id="proximo-cartao" hidden>
+          <p class="proximo__rotulo">Próximo atendimento</p>
+          <p class="proximo__hora" id="proximo-hora">--:--</p>
+          <p class="proximo__nome" id="proximo-nome">—</p>
+          <p class="proximo__servico" id="proximo-servico">—</p>
+          <p class="proximo__contagem" id="proximo-contagem"></p>
+        </div>
+
+        <h2 class="secao-titulo">Agenda do dia</h2>
+        <div id="lista-hoje" class="lista"></div>
+      </section>
+
+      <!-- ---------- AGENDA (CALENDÁRIO) ---------- -->
+      <section class="aba" id="aba-agenda" hidden>
+        <div class="mes">
+          <button class="icone-btn" id="mes-anterior" aria-label="Mês anterior">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <h2 class="mes__nome" id="mes-nome">—</h2>
+          <button class="icone-btn" id="mes-proximo" aria-label="Próximo mês">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6"/></svg>
+          </button>
+        </div>
+
+        <div class="semana-rotulos" aria-hidden="true">
+          <span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span>
+        </div>
+        <div class="calendario" id="calendario"></div>
+
+        <h2 class="secao-titulo" id="dia-escolhido-titulo">Selecione um dia</h2>
+        <div id="lista-dia" class="lista"></div>
+      </section>
+
+      <!-- ---------- HISTÓRICO ---------- -->
+      <section class="aba" id="aba-historico" hidden>
+        <div class="busca">
+          <svg class="busca__icone" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <input type="search" id="campo-busca" placeholder="Buscar por nome do cliente" aria-label="Buscar cliente" />
+        </div>
+
+        <div class="filtros" role="group" aria-label="Filtrar por situação">
+          <button class="chip chip--ativo" data-filtro="todos">Todos</button>
+          <button class="chip" data-filtro="pendente">A confirmar</button>
+          <button class="chip" data-filtro="confirmado">Confirmados</button>
+          <button class="chip" data-filtro="concluido">Concluídos</button>
+          <button class="chip" data-filtro="cancelado">Cancelados</button>
+        </div>
+
+        <div id="lista-historico" class="lista"></div>
+      </section>
+
+    </main>
+
+    <!-- botão de novo agendamento -->
+    <button class="flutuante" id="btn-novo" aria-label="Novo agendamento">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M12 5v14M5 12h14"/></svg>
+    </button>
+
+    <!-- navegação inferior -->
+    <nav class="barra" aria-label="Navegação principal">
+      <button class="barra__item barra__item--ativo" data-aba="hoje">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M3 10.5L12 4l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+        <span>Hoje</span>
+      </button>
+      <button class="barra__item" data-aba="agenda">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 10h18M8 3v4M16 3v4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>Agenda</span>
+      </button>
+      <button class="barra__item" data-aba="historico">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3.5 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>Histórico</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- ============ FICHA DO ATENDIMENTO ============ -->
+  <div class="folha" id="folha-detalhe" hidden>
+    <div class="folha__fundo" data-fechar></div>
+    <div class="folha__painel" role="dialog" aria-modal="true" aria-labelledby="detalhe-nome">
+      <div class="folha__puxador" aria-hidden="true"></div>
+      <div class="folha__corpo">
+        <span class="etiqueta" id="detalhe-status">—</span>
+        <h2 class="folha__titulo" id="detalhe-nome">—</h2>
+        <dl class="ficha">
+          <div><dt>Quando</dt><dd id="detalhe-quando">—</dd></div>
+          <div><dt>Serviço</dt><dd id="detalhe-servico">—</dd></div>
+          <div id="linha-contato"><dt>Contato</dt><dd id="detalhe-contato">—</dd></div>
+          <div id="linha-obs"><dt>Observações</dt><dd id="detalhe-obs">—</dd></div>
+        </dl>
+        <div class="acoes" id="detalhe-acoes"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ NOVO AGENDAMENTO ============ -->
+  <div class="folha" id="folha-novo" hidden>
+    <div class="folha__fundo" data-fechar></div>
+    <div class="folha__painel" role="dialog" aria-modal="true" aria-labelledby="titulo-novo">
+      <div class="folha__puxador" aria-hidden="true"></div>
+      <div class="folha__corpo">
+        <h2 class="folha__titulo" id="titulo-novo">Novo agendamento</h2>
+
+        <form id="form-novo" novalidate>
+          <label class="campo">
+            <span class="campo__rotulo">Nome do cliente</span>
+            <input type="text" id="novo-nome" required maxlength="80"
+                   autocomplete="name" placeholder="Como devo chamar?" />
+          </label>
+
+          <div class="campo">
+            <span class="campo__rotulo">Serviço</span>
+            <div class="opcoes" id="novo-servicos"></div>
+          </div>
+
+          <div class="dupla">
+            <label class="campo">
+              <span class="campo__rotulo">Dia</span>
+              <input type="date" id="novo-data" required />
+            </label>
+            <label class="campo">
+              <span class="campo__rotulo">Hora</span>
+              <input type="time" id="novo-hora" required step="900" />
+            </label>
+          </div>
+
+          <label class="campo">
+            <span class="campo__rotulo">Observações <em>(opcional)</em></span>
+            <textarea id="novo-obs" rows="2" maxlength="500"
+                      placeholder="Preferências, restrições, algo a lembrar"></textarea>
+          </label>
+
+          <p class="alerta" id="novo-erro" hidden></p>
+
+          <div class="acoes acoes--fim">
+            <button type="button" class="btn btn--neutro" data-fechar>Cancelar</button>
+            <button type="submit" class="btn btn--principal" id="btn-salvar">Salvar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ CONFIRMAÇÃO ============ -->
+  <div class="folha folha--curta" id="folha-confirma" hidden>
+    <div class="folha__fundo" data-fechar></div>
+    <div class="folha__painel" role="alertdialog" aria-modal="true" aria-labelledby="confirma-titulo">
+      <div class="folha__corpo">
+        <h2 class="folha__titulo" id="confirma-titulo">Tem certeza?</h2>
+        <p class="folha__texto" id="confirma-texto">—</p>
+        <div class="acoes acoes--fim">
+          <button type="button" class="btn btn--neutro" data-fechar>Voltar</button>
+          <button type="button" class="btn btn--perigo" id="btn-confirma-sim">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="aviso" id="aviso" role="status" aria-live="polite" hidden></div>
+
+  <script type="module" src="js/painel.js"></script>
+</body>
+</html>
