@@ -116,8 +116,13 @@ h1 { font-family: var(--display); font-size: 1.5rem; font-weight: 500; margin-bo
   box-shadow: 0 0 0 1px var(--ouro), 0 10px 26px rgba(154, 106, 38, 0.12);
 }
 
-.servico__nome { font-family: var(--display); font-size: 1.14rem; }
-.servico__desc { color: var(--ink-dim); font-size: 0.84rem; margin-top: 0.15rem; }
+/* o wrapper precisa ser bloco para o nome e a descricao empilharem.
+   Cobre as duas formas do markup para nao depender de cache do navegador. */
+.servico__info,
+.servico > span:not(.servico__tempo) { display: block; min-width: 0; }
+
+.servico__nome { display: block; font-family: var(--display); font-size: 1.14rem; line-height: 1.25; }
+.servico__desc { display: block; color: var(--ink-dim); font-size: 0.84rem; line-height: 1.5; margin-top: 0.25rem; }
 .servico__tempo {
   flex: none; font-size: 0.78rem; font-weight: 600; color: var(--ouro);
   font-variant-numeric: tabular-nums;

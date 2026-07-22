@@ -189,11 +189,14 @@ export async function excluir(id) {
 // Servicos
 // ---------------------------------------------------------------------
 
+// Espelho local dos servicos: a lista aparece na hora, sem esperar a rede.
+// Se o banco tiver algo diferente, o que vem de la substitui esta lista.
 export const SERVICOS_PADRAO = [
-  { nome: "Massagem Relaxante", duracaoMin: 60 },
-  { nome: "Massagem Tântrica",  duracaoMin: 90 },
-  { nome: "Massagem Nuru",      duracaoMin: 90 },
-  { nome: "Massagem Lingam",    duracaoMin: 60 }
+  { nome: "Massagem Relaxante", duracaoMin: 60, descricao: "Movimentos amplos e contínuos que soltam a tensão do corpo inteiro." },
+  { nome: "Massagem Tântrica",  duracaoMin: 90, descricao: "Ritual de respiração, toque e presença." },
+  { nome: "Massagem Nuru",      duracaoMin: 90, descricao: "Contato corpo a corpo com gel específico." },
+  { nome: "Massagem Lingam",    duracaoMin: 60, descricao: "Técnica focada, conduzida com calma." },
+  { nome: "Spa dos Pés",        duracaoMin: 45, descricao: "Escalda-pés aromático, esfoliação e massagem com pedras quentes." }
 ];
 
 export async function lerServicos() {

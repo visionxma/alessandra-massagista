@@ -29,12 +29,34 @@ const estado = {
 // ---------------------------------------------------------------------
 
 async function iniciar() {
-  await dados.iniciar();
-  estado.servicos = await dados.lerServicos();
+  // 1) desenha na hora com a lista local: o cliente ja escolhe o servico
+  //    enquanto o Firebase carrega em segundo plano
+  estado.servicos = dados.SERVICOS_PADRAO;
   montarServicos();
   montarDias();
   ligarNavegacao();
   ligarFormulario();
+
+  // 2) quando o banco responder, atualiza a lista sem travar a tela
+  try {
+    await dados.iniciar();
+    const doBanco = await dados.lerServicos();
+    if (doBanco?.length) {
+      const escolhido = estado.servico?.nome;
+      estado.servicos = doBanco;
+      montarServicos();
+      // preserva a escolha se o servico continuar existindo
+      if (escolhido) {
+        const i = doBanco.findIndex((s) => s.nome === escolhido);
+        if (i >= 0) {
+          estado.servico = doBanco[i];
+          [...$("#servicos").children][i]?.classList.add("servico--escolhido");
+        }
+      }
+    }
+  } catch {
+    // segue com a lista local, que ja esta na tela
+  }
 }
 
 // ---------------------------------------------------------------------
@@ -44,12 +66,23 @@ async function iniciar() {
 function montarServicos() {
   $("#servicos").innerHTML = estado.servicos.map((s, i) => `
     <button type="button" class="servico" data-i="${i}">
-      <span>
+      <span class="servico__info">
         <span class="servico__nome">${esc(s.nome)}</span>
         ${s.descricao ? `<span class="servico__desc">${esc(s.descricao)}</span>` : ""}
       </span>
       <span class="servico__tempo">${s.duracaoMin} min</span>
     </button>`).join("");
+
+  ligarCliqueServico();
+}
+
+// registrado uma unica vez: montarServicos() roda de novo quando o
+// banco responde, e sem esta trava os listeners se acumulariam
+let cliqueServicoLigado = false;
+
+function ligarCliqueServico() {
+  if (cliqueServicoLigado) return;
+  cliqueServicoLigado = true;
 
   $("#servicos").addEventListener("click", (e) => {
     const btn = e.target.closest(".servico");
