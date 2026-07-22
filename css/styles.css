@@ -361,7 +361,9 @@ a { color: inherit; text-decoration: none; }
 }
 
 .hero__portrait img {
+  display: block;
   width: 100%;
+  height: auto;              /* neutraliza o height do atributo HTML */
   aspect-ratio: 4 / 5;
   object-fit: cover;
 }
@@ -873,20 +875,33 @@ a { color: inherit; text-decoration: none; }
   .hero__actions { order: 4; }
   .hero__local { order: 5; }
 
-  /* foto circular entre o subtitulo e o botao de agendar */
+  /* foto circular entre o subtitulo e o botao de agendar.
+     Largura E altura fixas e iguais: nao dependemos de aspect-ratio,
+     que como item flex era esticado na vertical em Android/Samsung. */
   .hero__portrait {
-    justify-self: center;
+    --foto: min(52vw, 200px);
+    flex: 0 0 auto;          /* impede o flex de esticar o item */
     align-self: center;
-    width: min(52vw, 200px);
+    width: var(--foto);
+    height: var(--foto);
     margin: 1.2rem 0 1.4rem;
   }
 
   .hero__portrait-frame {
+    width: 100%;
+    height: 100%;
     border-radius: 50%;
     box-shadow: 0 20px 45px rgba(20, 17, 14, 0.3);
   }
 
-  .hero__portrait img { aspect-ratio: 1 / 1; object-position: 50% 22%; }
+  .hero__portrait img {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;      /* anula a regra do desktop */
+    object-fit: cover;
+    object-position: 50% 22%;
+    display: block;
+  }
 
   /* anel decorativo acompanha o formato circular */
   .hero__portrait::before {
