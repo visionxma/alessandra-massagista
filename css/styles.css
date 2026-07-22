@@ -942,15 +942,46 @@ a { color: inherit; text-decoration: none; }
 .faq__head { margin-bottom: clamp(1.8rem, 4vw, 2.6rem); }
 .faq__head h2 { max-width: 20ch; }
 
-.faq__list { display: grid; gap: 0.9rem; }
+/* grid nao permite sticky nos filhos: usa fluxo normal.
+   O padding inferior da curso de rolagem para a pilha se formar
+   por inteiro antes da secao terminar. */
+.faq__list { display: block; padding-bottom: 30vh; }
 
 .faq__item {
+  position: sticky;
   background: #fdfcf9;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 0 1.4rem;
+  margin-bottom: 0.9rem;
   transition: border-color 0.35s ease, box-shadow 0.35s ease;
 }
+
+/* faixa dourada marca cada camada da pilha */
+.faq__item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  border-radius: var(--radius) var(--radius) 0 0;
+  background: linear-gradient(90deg, var(--gold), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.faq__item[open]::before { opacity: 1; }
+
+/* degrau proximo da altura da pergunta: o texto continua legivel */
+.faq__item:nth-child(1) { top: 96px; }
+.faq__item:nth-child(2) { top: 148px; }
+.faq__item:nth-child(3) { top: 200px; }
+.faq__item:nth-child(4) { top: 252px; }
+.faq__item:nth-child(5) { top: 304px; }
+
+/* o card aberto sobe acima dos demais na pilha */
+.faq__item[open] { z-index: 2; }
 
 .faq__item[open] {
   border-color: rgba(169, 126, 63, 0.42);
@@ -1237,6 +1268,14 @@ a { color: inherit; text-decoration: none; }
     margin-bottom: 2rem;
   }
 
+  /* FAQ: offsets menores na tela pequena */
+  .faq__list { padding-bottom: 18vh; }
+  .faq__item:nth-child(1) { top: 78px; }
+  .faq__item:nth-child(2) { top: 116px; }
+  .faq__item:nth-child(3) { top: 154px; }
+  .faq__item:nth-child(4) { top: 192px; }
+  .faq__item:nth-child(5) { top: 230px; }
+
   .dif-card:nth-child(1) { top: 84px; }
   .dif-card:nth-child(2) { top: 104px; }
   .dif-card:nth-child(3) { top: 124px; }
@@ -1269,5 +1308,6 @@ a { color: inherit; text-decoration: none; }
 
   /* sem empilhamento por scroll: cards ficam em fluxo normal */
   .dif-card,
-  .servico { position: static; }
+  .servico,
+  .faq__item { position: static; }
 }
