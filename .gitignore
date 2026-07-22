@@ -2,3 +2,8 @@
 *.tmp
 Thumbs.db
 .DS_Store
+
+# Firebase local
+.firebase/
+firebase-debug.log
+firestore-debug.log

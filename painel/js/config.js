@@ -7,12 +7,12 @@
 // =====================================================================
 
 export const firebaseConfig = {
-  apiKey: "COLE_AQUI",
-  authDomain: "COLE_AQUI",
-  projectId: "COLE_AQUI",
-  storageBucket: "COLE_AQUI",
-  messagingSenderId: "COLE_AQUI",
-  appId: "COLE_AQUI"
+  apiKey: "AIzaSyDORhokbVBQFeydz4pG5FRKCaWBB8_6bOo",
+  authDomain: "alessandra-massagista.firebaseapp.com",
+  projectId: "alessandra-massagista",
+  storageBucket: "alessandra-massagista.firebasestorage.app",
+  messagingSenderId: "310032943442",
+  appId: "1:310032943442:web:296ceb566b98aaf8d4928b"
 };
 
 // Enquanto as credenciais nao forem preenchidas, o painel roda em modo
