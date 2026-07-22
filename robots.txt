@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://visionxma.github.io/alessandra-massagista/sitemap.xml
