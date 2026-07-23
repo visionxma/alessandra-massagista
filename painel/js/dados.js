@@ -469,6 +469,75 @@ export async function marcarLembreteEnviado(id) {
 }
 
 // ---------------------------------------------------------------------
+// Trilha de auditoria (imutavel pela regra do Firestore).
+//
+// Registra QUE evento aconteceu, nunca o CONTEUDO sensivel: sem nome de
+// cliente, telefone, senha ou token. Serve para investigar acessos e
+// alteracoes suspeitas. Falhar aqui nunca bloqueia a operacao principal.
+// ---------------------------------------------------------------------
+
+// Le os ultimos eventos de auditoria (so a profissional autenticada).
+export async function lerAuditoria(limite = 50) {
+  if (MODO_DEMO) return [];
+  try {
+    const q = fb.query(
+      fb.collection(db, "auditoria"),
+      fb.orderBy("em", "desc"),
+      fb.limit(limite)
+    );
+    const snap = await fb.getDocs(q);
+    return snap.docs.map((d) => {
+      const x = d.data();
+      return {
+        evento: x.evento || "",
+        detalhe: x.detalhe || "",
+        em: x.em?.toDate ? x.em.toDate() : null
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+// Exporta toda a agenda para backup local. Le tudo de uma vez (so
+// autenticado consegue) e devolve um objeto pronto para virar arquivo.
+export async function exportarTudo() {
+  if (MODO_DEMO) {
+    return { demo: true, agendamentos: demo.ler(), servicos: demo.lerServicosDemo() };
+  }
+
+  const colecoes = ["agendamentos", "servicos", "bloqueios", "bloqueiosPrivados", "configuracao"];
+  const saida = { exportadoEm: new Date().toISOString(), versao: 1 };
+
+  for (const nome of colecoes) {
+    const snap = await fb.getDocs(fb.collection(db, nome));
+    saida[nome] = snap.docs.map((d) => {
+      const x = d.data();
+      // converte timestamps para texto legivel
+      const limpo = {};
+      for (const [k, v] of Object.entries(x)) {
+        limpo[k] = v?.toDate ? v.toDate().toISOString() : v;
+      }
+      return { id: d.id, ...limpo };
+    });
+  }
+  return saida;
+}
+
+export async function auditar(evento, detalhe = "") {
+  if (MODO_DEMO) return;
+  if (!auth?.currentUser) return;
+  try {
+    await fb.addDoc(fb.collection(db, "auditoria"), {
+      evento: String(evento).slice(0, 40),
+      detalhe: String(detalhe).slice(0, 200),
+      em: fb.serverTimestamp(),
+      uid: auth.currentUser.uid
+    });
+  } catch { /* auditoria e complementar, nunca critica */ }
+}
+
+// ---------------------------------------------------------------------
 // Servicos
 // ---------------------------------------------------------------------
 

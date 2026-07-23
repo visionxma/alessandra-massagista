@@ -259,9 +259,11 @@ async function iniciar() {
 
     try {
       await dados.entrar(email, senha);
+      dados.auditar("login", "painel");   // nunca registra a senha
     } catch (ex) {
       erro.textContent = mensagemLogin(ex);
       erro.hidden = false;
+      dados.auditar("login_falhou");      // sem revelar qual credencial
     } finally {
       botao.disabled = false;
       botao.textContent = "Entrar";
@@ -270,6 +272,7 @@ async function iniciar() {
 
   $("#btn-demo")?.addEventListener("click", abrirApp);
   $("#btn-sair").addEventListener("click", async () => {
+    await dados.auditar("logout");
     await dados.sair();
     if (MODO_DEMO) mostrarLogin();
   });
@@ -289,6 +292,7 @@ async function iniciar() {
   ligarCaixa();
   ligarAjustes();
   ligarServicos();
+  ligarBackup();
   monitorarConexao();
   registrarPWA();
 }
@@ -1164,6 +1168,65 @@ function ligarServicos() {
 }
 
 // ---------------------------------------------------------------------
+// Backup e registro de atividades
+// ---------------------------------------------------------------------
+
+function ligarBackup() {
+  $("#btn-backup").addEventListener("click", async () => {
+    const botao = $("#btn-backup");
+    botao.disabled = true;
+    botao.textContent = "Preparando...";
+    try {
+      const dump = await dados.exportarTudo();
+      const blob = new Blob([JSON.stringify(dump, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const dia = chaveDia(new Date());
+      a.href = url;
+      a.download = `agenda-alessandra-backup-${dia}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      dados.auditar("backup_exportado");
+      avisar("Backup baixado", "bom");
+    } catch {
+      avisar("Não foi possível gerar o backup", "ruim");
+    } finally {
+      botao.disabled = false;
+      botao.textContent = "Baixar backup (.json)";
+    }
+  });
+
+  $("#btn-auditoria").addEventListener("click", async () => {
+    const eventos = await dados.lerAuditoria(50);
+
+    const rotulos = {
+      login: "Entrou no painel",
+      login_falhou: "Tentativa de login falhou",
+      logout: "Saiu do painel",
+      excluir_agendamento: "Excluiu um agendamento",
+      cancelar_agendamento: "Cancelou um agendamento",
+      backup_exportado: "Baixou um backup"
+    };
+
+    $("#auditoria-lista").innerHTML = eventos.length
+      ? eventos.map((e) => {
+          const quando = e.em
+            ? e.em.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+            : "";
+          return `<div class="evento-linha">
+            <span class="evento-linha__nome">${escapar(rotulos[e.evento] || e.evento)}</span>
+            <span class="evento-linha__quando">${quando}</span>
+          </div>`;
+        }).join("")
+      : vazioHTML("Sem registros", "As atividades da conta aparecem aqui.");
+
+    abrir("#folha-auditoria");
+  });
+}
+
+// ---------------------------------------------------------------------
 // Navegacao entre abas
 // ---------------------------------------------------------------------
 
@@ -1345,8 +1408,13 @@ document.addEventListener("click", async (e) => {
         : `O horário de ${a.clienteNome} às ${hhmm(a.inicio)} ficará livre.`,
       async () => {
         try {
-          if (excluir) await dados.excluir(a.id);
-          else await dados.mudarStatus(a.id, "cancelado");
+          if (excluir) {
+            await dados.excluir(a.id);
+            dados.auditar("excluir_agendamento", a.id);
+          } else {
+            await dados.mudarStatus(a.id, "cancelado");
+            dados.auditar("cancelar_agendamento", a.id);
+          }
           fechar("#folha-detalhe");
           avisar(excluir ? "Registro excluído" : "Atendimento cancelado", "bom");
         } catch {

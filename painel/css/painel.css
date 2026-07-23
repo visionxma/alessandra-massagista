@@ -325,6 +325,32 @@ button { background: none; border: 0; cursor: pointer; }
   min-height: 1.1em;
 }
 
+/* ajustes: textos e registro de atividades */
+
+.ajuste-texto {
+  font-size: 0.85rem;
+  color: var(--texto-2);
+  margin-bottom: 0.7rem;
+}
+.ajuste-texto--sep { margin-top: 1.3rem; padding-top: 1.1rem; border-top: 1px solid var(--linha); }
+
+.evento-linha {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--linha);
+}
+.evento-linha:last-child { border-bottom: 0; }
+.evento-linha__nome { font-size: 0.9rem; font-weight: 600; }
+.evento-linha__quando {
+  flex: none;
+  font-size: 0.78rem;
+  color: var(--texto-3);
+  font-variant-numeric: tabular-nums;
+}
+
 /* fila de lembretes prontos para disparar */
 
 .fila-lembretes {

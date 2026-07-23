@@ -258,6 +258,14 @@
           <button class="btn-mini" id="btn-novo-servico">Adicionar</button>
         </div>
         <div id="lista-servicos" class="lista"></div>
+
+        <h2 class="secao-titulo">Backup e segurança</h2>
+        <div class="cartao-form">
+          <p class="ajuste-texto">Baixe uma cópia de toda a sua agenda. Guarde em local seguro.</p>
+          <button class="btn btn--neutro btn--bloco" id="btn-backup">Baixar backup (.json)</button>
+          <p class="ajuste-texto ajuste-texto--sep">Ver os últimos acessos e alterações da conta.</p>
+          <button class="btn btn--neutro btn--bloco" id="btn-auditoria">Registro de atividades</button>
+        </div>
       </section>
 
       <!-- ---------- HISTÓRICO ---------- -->
@@ -497,6 +505,19 @@
 
         <h3 class="secao-titulo">Histórico</h3>
         <div id="cli-historico" class="lista"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ REGISTRO DE ATIVIDADES ============ -->
+  <div class="folha" id="folha-auditoria" hidden>
+    <div class="folha__fundo" data-fechar></div>
+    <div class="folha__painel" role="dialog" aria-modal="true" aria-labelledby="titulo-auditoria">
+      <div class="folha__puxador" aria-hidden="true"></div>
+      <div class="folha__corpo">
+        <h2 class="folha__titulo" id="titulo-auditoria">Atividades da conta</h2>
+        <p class="folha__texto">Últimos acessos e alterações. Este registro não pode ser editado nem apagado.</p>
+        <div id="auditoria-lista"></div>
       </div>
     </div>
   </div>
