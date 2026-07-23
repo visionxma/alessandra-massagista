@@ -74,8 +74,9 @@ const bloqueiosDoDia = (d) =>
 // Dinheiro
 // ---------------------------------------------------------------------
 
+// recebe CENTAVOS e devolve o valor em reais formatado
 const emReais = (centavos) =>
-  (Number(centavos) || 0).toLocaleString("pt-BR", {
+  ((Number(centavos) || 0) / 100).toLocaleString("pt-BR", {
     style: "currency", currency: "BRL", minimumFractionDigits: 2
   }).replace(/ /g, " ");
 

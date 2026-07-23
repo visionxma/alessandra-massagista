@@ -8,7 +8,7 @@
 
 // Subir esta versao a cada mudanca no painel: o service worker
 // descarta o cache antigo e serve os arquivos novos.
-const VERSAO = "agenda-v4";
+const VERSAO = "agenda-v5";
 
 const ESSENCIAIS = [
   "./",
