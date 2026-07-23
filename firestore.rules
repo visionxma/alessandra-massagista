@@ -44,21 +44,10 @@ service cloud.firestore {
     //   - Alessandra: acesso total.
     // -----------------------------------------------------------------
     match /agendamentos/{id} {
-      allow update, delete: if autenticada();
-
-      // Leitura publica dos horarios ocupados.
-      //
-      // Necessaria por dois motivos: a pagina publica monta a grade a
-      // partir dos horarios ja tomados, e a transacao anti-overbooking
-      // le a colecao antes de gravar.
-      //
-      // COMPROMISSO CONHECIDO: o Firestore nao filtra campos por regra,
-      // entao quem consultar a colecao diretamente ve nome e telefone
-      // dos clientes. A interface publica nunca exibe esses dados, mas
-      // eles nao estao criptografados. Para fechar isso seria preciso
-      // uma Cloud Function servindo so os intervalos, o que exige o
-      // plano pago do Firebase.
-      allow read: if true;
+      // Dados pessoais: SO a profissional autenticada le, edita e apaga.
+      // O visitante nunca acessa esta colecao; para saber quais horarios
+      // estao tomados ele usa a colecao anonima /ocupados.
+      allow read, update, delete: if autenticada();
 
       allow create: if autenticada() || (
            campos().status == 'pendente'
@@ -83,23 +72,44 @@ service cloud.firestore {
     }
 
     // -----------------------------------------------------------------
-    // horariosOcupados: espelho publico e anonimo dos horarios tomados.
-    // Serve para o site montar a grade sem expor quem agendou.
-    // Escrito apenas pela Cloud Function / pelo painel.
+    // ocupados: espelho publico e ANONIMO dos horarios tomados.
+    //
+    // Guarda exclusivamente inicio e fim. Nenhum nome, telefone ou
+    // observacao chega aqui, entao a leitura publica nao expoe dado
+    // pessoal nenhum. E o que a pagina de agendamento consulta para
+    // montar a grade e o que a transacao usa para impedir overbooking.
     // -----------------------------------------------------------------
-    match /horariosOcupados/{id} {
+    match /ocupados/{id} {
       allow read: if true;
-      allow write: if autenticada();
+
+      // o visitante so pode criar o marcador junto do seu agendamento,
+      // e apenas com os dois campos de horario
+      allow create: if autenticada() || (
+           request.resource.data.keys().hasOnly(['inicio', 'fim'])
+        && request.resource.data.inicio is timestamp
+        && request.resource.data.fim is timestamp
+        && request.resource.data.inicio < request.resource.data.fim
+        && request.resource.data.inicio > request.time
+      );
+
+      // alterar ou liberar horario e coisa da profissional
+      allow update, delete: if autenticada();
     }
 
     // -----------------------------------------------------------------
-    // bloqueios: folgas e compromissos pessoais.
-    // Leitura publica so para calcular horario livre (sem motivo exposto
-    // na interface do cliente).
+    // bloqueios: folgas e compromissos.
+    //
+    // A pagina publica precisa saber QUANDO nao ha atendimento, mas o
+    // MOTIVO e assunto particular da profissional. Por isso o motivo
+    // vive em /bloqueiosPrivados, de leitura restrita.
     // -----------------------------------------------------------------
     match /bloqueios/{id} {
       allow read: if true;
       allow write: if autenticada();
+    }
+
+    match /bloqueiosPrivados/{id} {
+      allow read, write: if autenticada();
     }
 
     // Nega tudo que nao foi declarado acima

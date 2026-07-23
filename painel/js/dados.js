@@ -121,9 +121,12 @@ export async function criarAgendamento(dados) {
   const janelaInicio = new Date(inicio.getTime() - margem);
   const janelaFim = new Date(fim.getTime() + margem);
 
+  // A checagem de conflito le o ESPELHO anonimo, nunca a colecao com
+  // dados pessoais. Assim o visitante do site nao precisa de permissao
+  // para ler nome ou telefone de ninguem.
   return fb.runTransaction(db, async (tx) => {
     const q = fb.query(
-      fb.collection(db, "agendamentos"),
+      fb.collection(db, "ocupados"),
       fb.where("inicio", ">=", fb.Timestamp.fromDate(janelaInicio)),
       fb.where("inicio", "<=", fb.Timestamp.fromDate(janelaFim))
     );
@@ -131,7 +134,6 @@ export async function criarAgendamento(dados) {
     const existentes = await fb.getDocs(q);
     const conflito = existentes.docs.some((d) => {
       const a = d.data();
-      if (a.status === "cancelado") return false;
       const ai = a.inicio.toDate().getTime();
       const af = a.fim.toDate().getTime();
       return ai < fim.getTime() && af > inicio.getTime();
@@ -144,6 +146,10 @@ export async function criarAgendamento(dados) {
     }
 
     const ref = fb.doc(fb.collection(db, "agendamentos"));
+
+    // espelho com o MESMO id: facilita manter os dois em sincronia
+    const refEspelho = fb.doc(db, "ocupados", ref.id);
+
     tx.set(ref, {
       clienteNome: dados.clienteNome.trim(),
       clienteContato: (dados.clienteContato || "").trim(),
@@ -162,8 +168,33 @@ export async function criarAgendamento(dados) {
       criadoEm: fb.serverTimestamp()
     });
 
+    // SO horario: nenhum dado pessoal atravessa para o lado publico
+    tx.set(refEspelho, {
+      inicio: fb.Timestamp.fromDate(inicio),
+      fim: fb.Timestamp.fromDate(fim)
+    });
+
     return ref.id;
   });
+}
+
+// Mantem o espelho em sincronia quando o agendamento muda de estado.
+// Cancelado ou excluido libera o horario; remarcado move o bloqueio.
+async function sincronizarEspelho(id, { inicio, fim, liberar } = {}) {
+  if (MODO_DEMO) return;
+  const ref = fb.doc(db, "ocupados", id);
+  try {
+    if (liberar) {
+      await fb.deleteDoc(ref);
+    } else if (inicio && fim) {
+      await fb.setDoc(ref, {
+        inicio: fb.Timestamp.fromDate(inicio),
+        fim: fb.Timestamp.fromDate(fim)
+      });
+    }
+  } catch {
+    // o espelho e um indice auxiliar: falhar aqui nao invalida a operacao
+  }
 }
 
 // ---------------------------------------------------------------------
@@ -172,10 +203,22 @@ export async function criarAgendamento(dados) {
 
 export async function mudarStatus(id, status) {
   if (MODO_DEMO) return demo.mudarStatus(id, status);
-  await fb.updateDoc(fb.doc(db, "agendamentos", id), {
-    status,
-    atualizadoEm: fb.serverTimestamp()
-  });
+
+  const ref = fb.doc(db, "agendamentos", id);
+  await fb.updateDoc(ref, { status, atualizadoEm: fb.serverTimestamp() });
+
+  // cancelado libera o horario; reativado volta a ocupar
+  if (status === "cancelado") {
+    await sincronizarEspelho(id, { liberar: true });
+  } else {
+    try {
+      const snap = await fb.getDoc(ref);
+      if (snap.exists()) {
+        const d = snap.data();
+        await sincronizarEspelho(id, { inicio: d.inicio.toDate(), fim: d.fim.toDate() });
+      }
+    } catch { /* espelho e auxiliar */ }
+  }
 }
 
 export async function remarcar(id, novoInicio, duracaoMin) {
@@ -186,11 +229,45 @@ export async function remarcar(id, novoInicio, duracaoMin) {
     fim: fb.Timestamp.fromDate(fim),
     atualizadoEm: fb.serverTimestamp()
   });
+  await sincronizarEspelho(id, { inicio: novoInicio, fim });
 }
 
 export async function excluir(id) {
   if (MODO_DEMO) return demo.excluir(id);
   await fb.deleteDoc(fb.doc(db, "agendamentos", id));
+  await sincronizarEspelho(id, { liberar: true });
+}
+
+// ---------------------------------------------------------------------
+// Horarios ocupados (espelho publico e anonimo)
+//
+// Usado pela pagina de agendamento para montar a grade. Contem apenas
+// inicio e fim: nenhum dado pessoal fica exposto ao visitante.
+// ---------------------------------------------------------------------
+
+export function observarOcupados(deData, ateData, callback) {
+  if (MODO_DEMO) {
+    return demo.observar(deData, ateData, (lista) =>
+      callback(lista
+        .filter((a) => a.status !== "cancelado")
+        .map((a) => ({ inicio: a.inicio, fim: a.fim }))));
+  }
+
+  const q = fb.query(
+    fb.collection(db, "ocupados"),
+    fb.where("inicio", ">=", fb.Timestamp.fromDate(deData)),
+    fb.where("inicio", "<=", fb.Timestamp.fromDate(ateData))
+  );
+
+  return fb.onSnapshot(q, (snap) => {
+    callback(snap.docs.map((d) => {
+      const x = d.data();
+      return {
+        inicio: x.inicio?.toDate ? x.inicio.toDate() : new Date(x.inicio),
+        fim: x.fim?.toDate ? x.fim.toDate() : new Date(x.fim)
+      };
+    }));
+  }, () => callback([]));
 }
 
 // ---------------------------------------------------------------------
@@ -202,17 +279,29 @@ export function observarBloqueios(callback) {
 
   return fb.onSnapshot(
     fb.collection(db, "bloqueios"),
-    (snap) => {
-      callback(snap.docs.map((d) => {
+    async (snap) => {
+      const lista = snap.docs.map((d) => {
         const x = d.data();
         return {
           id: d.id,
           inicio: x.inicio?.toDate ? x.inicio.toDate() : new Date(x.inicio),
           fim: x.fim?.toDate ? x.fim.toDate() : new Date(x.fim),
-          motivo: x.motivo || "",
+          motivo: x.motivo || "",   // legado: bloqueios antigos
           diaTodo: x.diaTodo !== false
         };
-      }));
+      });
+
+      callback(lista);
+
+      // Os motivos so chegam para quem esta autenticado. No site publico
+      // esta leitura falha silenciosamente, como deve ser.
+      try {
+        const privados = await fb.getDocs(fb.collection(db, "bloqueiosPrivados"));
+        if (privados.empty) return;
+        const mapa = new Map(privados.docs.map((d) => [d.id, d.data().motivo || ""]));
+        const comMotivo = lista.map((b) => ({ ...b, motivo: mapa.get(b.id) || b.motivo }));
+        if (comMotivo.some((b, i) => b.motivo !== lista[i].motivo)) callback(comMotivo);
+      } catch { /* visitante nao le motivos: comportamento esperado */ }
     },
     () => callback([])
   );
@@ -243,19 +332,29 @@ export async function bloquearFaixa(data, horaInicio, horaFim, motivo = "") {
 async function gravarBloqueio(inicio, fim, motivo, diaTodo) {
   if (MODO_DEMO) return demo.bloquear(inicio, fim, motivo, diaTodo);
 
+  // publico: apenas quando nao ha atendimento
   const ref = await fb.addDoc(fb.collection(db, "bloqueios"), {
     inicio: fb.Timestamp.fromDate(inicio),
     fim: fb.Timestamp.fromDate(fim),
-    motivo,
     diaTodo,
     criadoEm: fb.serverTimestamp()
   });
+
+  // privado: o motivo e assunto so da profissional
+  if (motivo) {
+    try {
+      await fb.setDoc(fb.doc(db, "bloqueiosPrivados", ref.id), { motivo });
+    } catch { /* o bloqueio ja valeu; o motivo e complementar */ }
+  }
   return ref.id;
 }
 
 export async function desbloquear(id) {
   if (MODO_DEMO) return demo.desbloquear(id);
   await fb.deleteDoc(fb.doc(db, "bloqueios", id));
+  try {
+    await fb.deleteDoc(fb.doc(db, "bloqueiosPrivados", id));
+  } catch { /* pode nao existir motivo */ }
 }
 
 // ---------------------------------------------------------------------

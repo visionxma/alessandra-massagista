@@ -256,12 +256,9 @@ async function lerOcupados(de, ate) {
       resolve(lista);
     };
 
-    parar = dados.observarAgendamentos(de, ate, (lista) => {
-      responder(
-        (lista || [])
-          .filter((a) => a.status !== "cancelado")
-          .map((a) => ({ inicio: a.inicio, fim: a.fim }))
-      );
+    // le o espelho anonimo: so horarios, sem dados de cliente
+    parar = dados.observarOcupados(de, ate, (lista) => {
+      responder(lista || []);
     });
 
     // se ja respondeu de forma sincrona, cancela a escuta agora
