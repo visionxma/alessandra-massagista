@@ -6,7 +6,9 @@
 // proprio Firestore, que ja tem persistencia offline e sincroniza sozinho.
 // =====================================================================
 
-const VERSAO = "agenda-v1";
+// Subir esta versao a cada mudanca no painel: o service worker
+// descarta o cache antigo e serve os arquivos novos.
+const VERSAO = "agenda-v2";
 
 const ESSENCIAIS = [
   "./",
