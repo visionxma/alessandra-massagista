@@ -108,7 +108,13 @@
           <h2 class="secao-titulo">Próximos dias</h2>
           <span class="contador" id="contador-proximos"></span>
         </div>
-        <p class="dica-lembrete" id="aviso-lembretes" hidden></p>
+        <div class="fila-lembretes" id="fila-lembretes" hidden>
+          <p class="fila-lembretes__titulo">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+            <span id="fila-lembretes-texto">Lembretes para enviar</span>
+          </p>
+          <div id="fila-lembretes-lista"></div>
+        </div>
         <div id="lista-proximos" class="lista"></div>
       </section>
 

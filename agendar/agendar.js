@@ -297,7 +297,44 @@ function montarResumo() {
       <span class="resumo__val">${hhmm(d)} · ${estado.servico.duracaoMin} min</span></div>`;
 }
 
+// ---------------------------------------------------------------------
+// Telefone: mascara e validacao
+// ---------------------------------------------------------------------
+
+function formatarTelefone(valor) {
+  const d = valor.replace(/\D/g, "").slice(0, 11);
+  if (d.length <= 2) return d.length ? `(${d}` : "";
+  if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+  if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+}
+
+// celular tem 11 digitos (com o 9); fixo tem 10
+const telefoneValido = (v) => {
+  const d = v.replace(/\D/g, "");
+  return d.length === 10 || d.length === 11;
+};
+
+let lembreteMin = 1440;   // padrao: 1 dia antes
+
 function ligarFormulario() {
+  const campoTel = $("#contato");
+
+  campoTel.addEventListener("input", (e) => {
+    const antes = e.target.selectionStart === e.target.value.length;
+    e.target.value = formatarTelefone(e.target.value);
+    if (antes) e.target.setSelectionRange(e.target.value.length, e.target.value.length);
+  });
+
+  $("#lembrete-opcoes").addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-lembrete]");
+    if (!btn) return;
+    lembreteMin = Number(btn.dataset.lembrete);
+    [...$("#lembrete-opcoes").children].forEach((b) =>
+      b.classList.toggle("pilula--escolhida", b === btn));
+    if (navigator.vibrate) navigator.vibrate(10);
+  });
+
   $("#form").addEventListener("submit", async (e) => {
     e.preventDefault();
     const erro = $("#erro");
@@ -308,6 +345,15 @@ function ligarFormulario() {
     if (nome.length < 2) {
       erro.textContent = "Por favor, informe seu nome.";
       erro.hidden = false;
+      $("#nome").focus();
+      return;
+    }
+
+    const telefone = campoTel.value.trim();
+    if (!telefoneValido(telefone)) {
+      erro.textContent = "Informe um telefone válido com DDD, como (31) 98765-4321.";
+      erro.hidden = false;
+      campoTel.focus();
       return;
     }
 
@@ -317,7 +363,8 @@ function ligarFormulario() {
     try {
       await dados.criarAgendamento({
         clienteNome: nome,
-        clienteContato: $("#contato").value.trim(),
+        clienteContato: telefone,
+        lembreteMin,
         servicoNome: estado.servico.nome,
         duracaoMin: estado.servico.duracaoMin,
         precoCentavos: estado.servico.precoCentavos || 0,

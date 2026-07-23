@@ -63,10 +63,22 @@
                  placeholder="Como devo chamar você?" />
         </label>
         <label class="campo">
-          <span>Contato <em>(opcional)</em></span>
-          <input type="text" id="contato" maxlength="60" autocomplete="tel"
-                 placeholder="Telefone ou e-mail" />
+          <span>Telefone com DDD</span>
+          <input type="tel" id="contato" required maxlength="16" autocomplete="tel"
+                 inputmode="numeric" placeholder="(31) 98765-4321" />
+          <span class="ajuda">Usado para confirmar o horário com você.</span>
         </label>
+
+        <fieldset class="lembrete">
+          <legend>Quer receber um lembrete?</legend>
+          <div class="lembrete__opcoes" id="lembrete-opcoes">
+            <button type="button" class="pilula pilula--escolhida" data-lembrete="1440">1 dia antes</button>
+            <button type="button" class="pilula" data-lembrete="180">3 horas antes</button>
+            <button type="button" class="pilula" data-lembrete="60">1 hora antes</button>
+            <button type="button" class="pilula" data-lembrete="0">Não precisa</button>
+          </div>
+        </fieldset>
+
         <label class="campo">
           <span>Alguma observação? <em>(opcional)</em></span>
           <textarea id="obs" rows="3" maxlength="500"

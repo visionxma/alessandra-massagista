@@ -98,6 +98,7 @@ function paraObjeto(doc) {
     observacoes: d.observacoes || "",
     origem: d.origem || "painel",
     precoCentavos: d.precoCentavos || 0,
+    lembreteMin: d.lembreteMin || 0,
     lembreteEnviadoEm: d.lembreteEnviadoEm?.toDate ? d.lembreteEnviadoEm.toDate() : null
   };
 }
@@ -156,6 +157,8 @@ export async function criarAgendamento(dados) {
       // preco congelado no momento do agendamento: mudar a tabela
       // depois nao altera o historico de faturamento
       precoCentavos: Number(dados.precoCentavos) || 0,
+      // quantos minutos antes o cliente quer ser lembrado (0 = nao quer)
+      lembreteMin: Number(dados.lembreteMin) || 0,
       criadoEm: fb.serverTimestamp()
     });
 

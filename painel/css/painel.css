@@ -325,14 +325,60 @@ button { background: none; border: 0; cursor: pointer; }
   min-height: 1.1em;
 }
 
-.dica-lembrete {
-  margin-bottom: 0.7rem;
-  padding: 0.65rem 0.9rem;
+/* fila de lembretes prontos para disparar */
+
+.fila-lembretes {
+  margin-bottom: 0.9rem;
+  padding: 0.9rem 1rem 1rem;
   background: var(--ambar-fundo);
-  border-radius: var(--r-p);
-  font-size: 0.82rem;
+  border: 1px solid rgba(216, 161, 63, 0.32);
+  border-radius: var(--r-m);
+}
+
+.fila-lembretes__titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   color: var(--ambar);
 }
+
+.fila-lembretes__titulo svg { width: 17px; height: 17px; flex: none; }
+
+.lembrete-linha {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0;
+  border-top: 1px solid rgba(216, 161, 63, 0.2);
+}
+
+.lembrete-linha:first-of-type { border-top: 0; padding-top: 0; }
+
+.lembrete-linha__nome { font-size: 0.9rem; font-weight: 600; }
+.lembrete-linha__quando { font-size: 0.77rem; color: var(--texto-2); }
+
+.btn-enviar {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  background: #2ea86b;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  transition: transform .15s var(--mola), opacity .2s;
+}
+
+.btn-enviar:active { transform: scale(0.94); }
+.btn-enviar svg { width: 14px; height: 14px; }
+.btn-enviar--feito { background: var(--elevado); color: var(--texto-3); }
 
 /* ---------- faturamento ---------- */
 

@@ -222,6 +222,60 @@ h1 { font-family: var(--display); font-size: 1.5rem; font-weight: 500; margin-bo
 .campo input:focus, .campo textarea:focus { outline: none; border-color: var(--ouro); }
 .campo input::placeholder, .campo textarea::placeholder { color: #9c9184; }
 
+.ajuda {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  color: var(--ink-dim);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+}
+
+/* escolha do lembrete */
+
+.lembrete {
+  border: 0;
+  padding: 0;
+  margin: 0 0 1rem;
+}
+
+.lembrete legend {
+  padding: 0;
+  margin-bottom: 0.55rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.lembrete__opcoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.pilula {
+  padding: 0.6rem 0.95rem;
+  background: var(--cartao);
+  border: 1px solid var(--linha);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--ink-dim);
+  transition: border-color .2s, background-color .2s, color .2s, transform .12s var(--mola);
+}
+
+.pilula:active { transform: scale(0.95); }
+
+.pilula--escolhida {
+  background: var(--ouro);
+  border-color: var(--ouro);
+  color: #fff;
+  font-weight: 600;
+}
+
 .erro {
   margin-bottom: 0.9rem; padding: 0.75rem 0.95rem;
   background: rgba(180, 68, 60, 0.1);

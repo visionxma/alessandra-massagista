@@ -326,6 +326,9 @@ async function abrirApp() {
   desenharCalendario();
 
   setInterval(atualizarContagem, 30000);
+
+  // a fila de lembretes depende da hora atual: reavalia a cada minuto
+  setInterval(avisarLembretesPendentes, 60000);
 }
 
 // ---------------------------------------------------------------------
@@ -465,25 +468,80 @@ function desenharProximos() {
   $("#lista-proximos").innerHTML = html;
 }
 
-// Destaca os atendimentos de amanha que ainda nao receberam lembrete.
-// O envio continua manual: um site estatico nao dispara nada sozinho.
-function avisarLembretesPendentes(futuros) {
-  const amanha = inicioDoDia(new Date());
-  amanha.setDate(amanha.getDate() + 1);
-
-  const pendentes = futuros.filter(
-    (a) => mesmoDia(a.inicio, amanha) && a.clienteContato && !a.lembreteEnviadoEm
-  );
-
-  const alvo = $("#aviso-lembretes");
+// Fila de lembretes: mostra quem ja entrou na janela pedida pelo cliente
+// e ainda nao foi avisado. O disparo e um toque, com a mensagem pronta.
+function avisarLembretesPendentes() {
+  const alvo = $("#fila-lembretes");
   if (!alvo) return;
 
-  alvo.hidden = !pendentes.length;
-  if (pendentes.length) {
-    alvo.textContent = pendentes.length === 1
-      ? "1 cliente atendido amanhã ainda não recebeu lembrete"
-      : `${pendentes.length} clientes atendidos amanhã ainda não receberam lembrete`;
+  const agora = new Date();
+
+  const naHora = estado.agendamentos
+    .filter((a) => {
+      if (a.status === "cancelado" || a.status === "concluido") return false;
+      if (!a.clienteContato || a.lembreteEnviadoEm) return false;
+      if (!a.lembreteMin) return false;             // cliente dispensou
+      if (a.inicio <= agora) return false;          // ja passou
+      const momento = new Date(a.inicio.getTime() - a.lembreteMin * 60000);
+      return agora >= momento;                       // entrou na janela
+    })
+    .sort((a, b) => a.inicio - b.inicio);
+
+  alvo.hidden = !naHora.length;
+  if (!naHora.length) return;
+
+  $("#fila-lembretes-texto").textContent = naHora.length === 1
+    ? "1 lembrete para enviar"
+    : `${naHora.length} lembretes para enviar`;
+
+  $("#fila-lembretes-lista").innerHTML = naHora.map((a) => {
+    const quando = mesmoDia(a.inicio, agora)
+      ? `hoje às ${hhmm(a.inicio)}`
+      : `${a.inicio.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })} às ${hhmm(a.inicio)}`;
+    return `
+      <div class="lembrete-linha">
+        <span>
+          <span class="lembrete-linha__nome">${escapar(a.clienteNome)}</span>
+          <span class="lembrete-linha__quando">${a.servicoNome} · ${quando}</span>
+        </span>
+        <button class="btn-enviar" data-lembrar="${a.id}">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12.04 2c-5.46 0-9.9 4.44-9.9 9.9 0 1.75.46 3.45 1.32 4.95L2 22l5.3-1.39a9.87 9.87 0 0 0 4.74 1.21c5.46 0 9.9-4.44 9.9-9.9 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2m0 1.67c2.2 0 4.26.86 5.82 2.42a8.2 8.2 0 0 1 2.41 5.83c0 4.54-3.7 8.23-8.24 8.23a8.2 8.2 0 0 1-4.19-1.15l-.3-.17-3.12.82.83-3.04-.2-.32a8.2 8.2 0 0 1-1.26-4.38c.01-4.54 3.7-8.24 8.25-8.24m-3.53 4.4c-.16 0-.43.06-.66.31-.22.25-.87.85-.87 2.07 0 1.22.89 2.4 1 2.56.13.17 1.76 2.67 4.25 3.73.59.27 1.05.42 1.41.53.59.19 1.13.16 1.56.1.48-.07 1.46-.6 1.67-1.18.2-.58.2-1.07.14-1.18-.06-.1-.22-.16-.47-.28-.25-.13-1.46-.72-1.69-.8-.22-.09-.39-.13-.55.12-.17.25-.64.8-.78.96-.14.17-.29.19-.53.06-.25-.12-1.05-.38-1.99-1.22-.74-.66-1.23-1.47-1.38-1.72-.14-.24-.01-.38.11-.5.11-.11.25-.29.37-.43.13-.15.17-.25.25-.42.08-.17.04-.31-.02-.43-.06-.13-.55-1.35-.77-1.84-.2-.48-.4-.42-.55-.43z"/></svg>
+          Enviar
+        </button>
+      </div>`;
+  }).join("");
+}
+
+// Monta a mensagem do lembrete e abre a conversa com o cliente
+async function dispararLembrete(a) {
+  const mesmoDiaHoje = mesmoDia(a.inicio, new Date());
+  const quando = mesmoDiaHoje
+    ? `hoje às ${hhmm(a.inicio)}`
+    : `${a.inicio.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })}, às ${hhmm(a.inicio)}`;
+
+  const texto =
+    `Olá, ${a.clienteNome.split(" ")[0]}! Passando para lembrar do seu horário:\n\n` +
+    `${a.servicoNome}\n${quando}\n` +
+    `Rua Lagoa Santa, 11 - Carlos Prates\n\n` +
+    `Qualquer imprevisto, é só avisar. Até lá!`;
+
+  const so = (a.clienteContato || "").replace(/\D/g, "");
+  if (so.length >= 10) {
+    const numero = so.length <= 11 ? "55" + so : so;
+    window.open(`https://wa.me/${numero}?text=${encodeURIComponent(texto)}`, "_blank", "noopener");
+  } else {
+    try {
+      await navigator.clipboard.writeText(texto);
+      avisar("Mensagem copiada", "bom");
+    } catch {
+      avisar("Não foi possível copiar", "ruim");
+    }
   }
+
+  try {
+    await dados.marcarLembreteEnviado(a.id);
+    avisar("Lembrete marcado como enviado", "bom");
+  } catch { /* o envio ja aconteceu */ }
 }
 
 function rotuloDia(d) {
@@ -1125,6 +1183,14 @@ function ligarNavegacao() {
 
   // abrir ficha ao tocar em qualquer cartao
   document.addEventListener("click", (e) => {
+    // botao Enviar da fila de lembretes
+    const lembrar = e.target.closest("[data-lembrar]");
+    if (lembrar) {
+      const item = estado.agendamentos.find((a) => a.id === lembrar.dataset.lembrar);
+      if (item) dispararLembrete(item);
+      return;
+    }
+
     const cliente = e.target.closest("[data-cliente]");
     if (cliente) return abrirCliente(cliente.dataset.cliente);
 
