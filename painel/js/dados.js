@@ -186,6 +186,50 @@ export async function excluir(id) {
 }
 
 // ---------------------------------------------------------------------
+// Bloqueios: dias em que a profissional nao atende
+// ---------------------------------------------------------------------
+
+export function observarBloqueios(callback) {
+  if (MODO_DEMO) return demo.observarBloqueios(callback);
+
+  return fb.onSnapshot(
+    fb.collection(db, "bloqueios"),
+    (snap) => {
+      callback(snap.docs.map((d) => {
+        const x = d.data();
+        return {
+          id: d.id,
+          inicio: x.inicio?.toDate ? x.inicio.toDate() : new Date(x.inicio),
+          fim: x.fim?.toDate ? x.fim.toDate() : new Date(x.fim),
+          motivo: x.motivo || ""
+        };
+      }));
+    },
+    () => callback([])
+  );
+}
+
+export async function bloquearDia(data, motivo = "") {
+  const inicio = new Date(data); inicio.setHours(0, 0, 0, 0);
+  const fim = new Date(data); fim.setHours(23, 59, 59, 999);
+
+  if (MODO_DEMO) return demo.bloquear(inicio, fim, motivo);
+
+  const ref = await fb.addDoc(fb.collection(db, "bloqueios"), {
+    inicio: fb.Timestamp.fromDate(inicio),
+    fim: fb.Timestamp.fromDate(fim),
+    motivo,
+    criadoEm: fb.serverTimestamp()
+  });
+  return ref.id;
+}
+
+export async function desbloquear(id) {
+  if (MODO_DEMO) return demo.desbloquear(id);
+  await fb.deleteDoc(fb.doc(db, "bloqueios", id));
+}
+
+// ---------------------------------------------------------------------
 // Servicos
 // ---------------------------------------------------------------------
 
@@ -252,6 +296,44 @@ const demo = {
     this.ouvintes.add(emitir);
     emitir();
     return () => this.ouvintes.delete(emitir);
+  },
+
+  // --- bloqueios no modo demonstracao ---
+  CHAVE_BLOQ: "agenda_demo_bloqueios_v1",
+  ouvintesBloq: new Set(),
+
+  lerBloqueios() {
+    try {
+      const cru = localStorage.getItem(this.CHAVE_BLOQ);
+      if (!cru) return [];
+      return JSON.parse(cru).map((b) => ({
+        ...b, inicio: new Date(b.inicio), fim: new Date(b.fim)
+      }));
+    } catch { return []; }
+  },
+
+  gravarBloqueios(lista) {
+    localStorage.setItem(this.CHAVE_BLOQ, JSON.stringify(lista));
+    for (const fn of this.ouvintesBloq) fn();
+  },
+
+  observarBloqueios(callback) {
+    const emitir = () => callback(this.lerBloqueios());
+    this.ouvintesBloq.add(emitir);
+    emitir();
+    return () => this.ouvintesBloq.delete(emitir);
+  },
+
+  bloquear(inicio, fim, motivo) {
+    const lista = this.lerBloqueios();
+    const id = "bloq_" + Math.random().toString(36).slice(2, 10);
+    lista.push({ id, inicio, fim, motivo });
+    this.gravarBloqueios(lista);
+    return id;
+  },
+
+  desbloquear(id) {
+    this.gravarBloqueios(this.lerBloqueios().filter((b) => b.id !== id));
   },
 
   criar(dados) {

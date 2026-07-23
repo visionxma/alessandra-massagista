@@ -221,6 +221,108 @@ button { background: none; border: 0; cursor: pointer; }
 
 .conteudo { padding: 1.15rem 1.15rem 1.5rem; }
 
+/* ---------- sino de avisos ---------- */
+
+.topo__acoes { display: flex; align-items: center; gap: 0.15rem; }
+
+.sino { position: relative; }
+
+.sino--ativo { color: var(--ouro); }
+
+.sino__ponto {
+  position: absolute;
+  top: 7px; right: 8px;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--vermelho);
+  border: 2px solid var(--fundo);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sino--tocando svg { animation: sacode 0.7s var(--mola); }
+}
+
+@keyframes sacode {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(-13deg); }
+  40% { transform: rotate(11deg); }
+  60% { transform: rotate(-7deg); }
+  80% { transform: rotate(4deg); }
+}
+
+/* ---------- cabecalho de secao com acao ---------- */
+
+.secao-cabeca {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.contador {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--texto-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.btn-mini {
+  flex: none;
+  padding: 0.4rem 0.85rem;
+  border: 1px solid var(--linha);
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--texto-2);
+  transition: border-color .2s, color .2s;
+}
+
+.btn-mini:active { border-color: var(--ouro); color: var(--ouro); }
+
+.link-mini {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ouro);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.faixa-bloqueio {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.85rem;
+  padding: 0.75rem 1rem;
+  background: var(--verm-fundo);
+  border: 1px solid rgba(217, 115, 107, 0.3);
+  border-radius: var(--r-m);
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--vermelho);
+}
+
+/* dia bloqueado no calendario */
+.dia--bloqueado { opacity: 0.55; }
+
+.dia--bloqueado span:first-child {
+  text-decoration: line-through;
+  text-decoration-color: var(--vermelho);
+  text-decoration-thickness: 1.5px;
+}
+
+/* separador de data na lista de proximos */
+.dia-rotulo {
+  margin: 1.1rem 0 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ouro);
+}
+
+.dia-rotulo:first-child { margin-top: 0; }
+
 .secao-titulo {
   font-family: Georgia, serif; font-size: 1.05rem; font-weight: 500;
   margin: 1.6rem 0 0.85rem;

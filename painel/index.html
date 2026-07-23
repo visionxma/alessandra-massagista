@@ -61,9 +61,15 @@
           <p class="topo__saudacao" id="saudacao">Bom dia</p>
           <h1 class="topo__data" id="data-hoje">Hoje</h1>
         </div>
-        <button class="icone-btn" id="btn-sair" aria-label="Sair da conta" title="Sair">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
-        </button>
+        <div class="topo__acoes">
+          <button class="icone-btn sino" id="btn-sino" aria-label="Ativar avisos de novo agendamento" title="Avisos">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+            <span class="sino__ponto" id="sino-ponto" hidden></span>
+          </button>
+          <button class="icone-btn" id="btn-sair" aria-label="Sair da conta" title="Sair">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+          </button>
+        </div>
       </div>
       <p class="aviso-conexao" id="aviso-offline" hidden>Sem conexão. Mostrando os últimos dados.</p>
     </header>
@@ -97,6 +103,12 @@
 
         <h2 class="secao-titulo">Agenda do dia</h2>
         <div id="lista-hoje" class="lista"></div>
+
+        <div class="secao-cabeca">
+          <h2 class="secao-titulo">Próximos dias</h2>
+          <span class="contador" id="contador-proximos"></span>
+        </div>
+        <div id="lista-proximos" class="lista"></div>
       </section>
 
       <!-- ---------- AGENDA (CALENDÁRIO) ---------- -->
@@ -116,7 +128,14 @@
         </div>
         <div class="calendario" id="calendario"></div>
 
-        <h2 class="secao-titulo" id="dia-escolhido-titulo">Selecione um dia</h2>
+        <div class="secao-cabeca">
+          <h2 class="secao-titulo" id="dia-escolhido-titulo">Selecione um dia</h2>
+          <button class="btn-mini" id="btn-bloquear">Bloquear dia</button>
+        </div>
+        <p class="faixa-bloqueio" id="faixa-bloqueio" hidden>
+          <span>Dia sem atendimento</span>
+          <button class="link-mini" id="btn-desbloquear">Liberar</button>
+        </p>
         <div id="lista-dia" class="lista"></div>
       </section>
 

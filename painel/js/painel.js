@@ -43,6 +43,7 @@ function saudacao(h) {
 
 const estado = {
   agendamentos: [],
+  bloqueios: [],
   abaAtual: "hoje",
   mesVisivel: new Date(),
   diaEscolhido: new Date(),
@@ -51,8 +52,126 @@ const estado = {
   servicos: dados.SERVICOS_PADRAO,
   servicoEscolhido: 0,
   cancelarEscuta: null,
+  cancelarEscutaBloqueios: null,
   carregando: true
 };
+
+const diaBloqueado = (d) =>
+  estado.bloqueios.find((b) => b.inicio <= d && d <= b.fim) ||
+  estado.bloqueios.find((b) => mesmoDia(b.inicio, d));
+
+// ---------------------------------------------------------------------
+// Avisos de novo agendamento: som, vibracao e notificacao do sistema
+// ---------------------------------------------------------------------
+
+const alertas = {
+  ligado: localStorage.getItem("avisos_ligados") === "sim",
+  idsConhecidos: new Set(),
+  primeiraCarga: true,
+  audio: null,
+
+  // Toque gerado na hora: duas notas curtas, sem arquivo externo
+  tocar() {
+    try {
+      this.audio = this.audio || new (window.AudioContext || window.webkitAudioContext)();
+      if (this.audio.state === "suspended") this.audio.resume();
+
+      const agora = this.audio.currentTime;
+      [[880, 0], [1320, 0.16]].forEach(([hz, atraso]) => {
+        const osc = this.audio.createOscillator();
+        const vol = this.audio.createGain();
+        osc.type = "sine";
+        osc.frequency.value = hz;
+        vol.gain.setValueAtTime(0, agora + atraso);
+        vol.gain.linearRampToValueAtTime(0.22, agora + atraso + 0.02);
+        vol.gain.exponentialRampToValueAtTime(0.001, agora + atraso + 0.42);
+        osc.connect(vol).connect(this.audio.destination);
+        osc.start(agora + atraso);
+        osc.stop(agora + atraso + 0.45);
+      });
+    } catch { /* som e um extra: se falhar, o resto do aviso continua */ }
+  },
+
+  async pedirPermissao() {
+    if (!("Notification" in window)) return false;
+    if (Notification.permission === "granted") return true;
+    if (Notification.permission === "denied") return false;
+    return (await Notification.requestPermission()) === "granted";
+  },
+
+  async alternar() {
+    if (this.ligado) {
+      this.ligado = false;
+      localStorage.setItem("avisos_ligados", "nao");
+      atualizarSino();
+      avisar("Avisos desligados");
+      return;
+    }
+
+    const ok = await this.pedirPermissao();
+    this.ligado = true;
+    localStorage.setItem("avisos_ligados", "sim");
+    atualizarSino();
+    this.tocar();   // confirma que o som funciona
+    avisar(ok ? "Avisos ligados" : "Avisos ligados (sem notificação do sistema)", "bom");
+  },
+
+  notificar(item) {
+    if (!this.ligado) return;
+
+    this.tocar();
+    if (navigator.vibrate) navigator.vibrate([90, 60, 90]);
+
+    $("#sino-ponto").hidden = false;
+    const sino = $("#btn-sino");
+    sino.classList.add("sino--tocando");
+    setTimeout(() => sino.classList.remove("sino--tocando"), 800);
+
+    const quando = mesmoDia(item.inicio, new Date())
+      ? `hoje às ${hhmm(item.inicio)}`
+      : `${item.inicio.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })} às ${hhmm(item.inicio)}`;
+
+    if ("Notification" in window && Notification.permission === "granted") {
+      try {
+        new Notification("Novo agendamento", {
+          body: `${item.clienteNome} · ${item.servicoNome}\n${quando}`,
+          icon: "icons/icone-192.png",
+          badge: "icons/icone-192.png",
+          tag: "agendamento-" + item.id
+        });
+      } catch { /* alguns navegadores exigem service worker */ }
+    }
+
+    avisar(`Novo agendamento: ${item.clienteNome}`, "bom");
+  },
+
+  // Compara a lista nova com a anterior e avisa sobre o que chegou
+  conferir(lista) {
+    const novos = lista.filter(
+      (a) => !this.idsConhecidos.has(a.id) && a.origem === "site" && a.status === "pendente"
+    );
+
+    lista.forEach((a) => this.idsConhecidos.add(a.id));
+
+    // a primeira carga traz o historico inteiro: nao e novidade
+    if (this.primeiraCarga) {
+      this.primeiraCarga = false;
+      return;
+    }
+
+    novos.forEach((a) => this.notificar(a));
+  }
+};
+
+function atualizarSino() {
+  const sino = $("#btn-sino");
+  sino.classList.toggle("sino--ativo", alertas.ligado);
+  sino.setAttribute(
+    "aria-label",
+    alertas.ligado ? "Desativar avisos de novo agendamento" : "Ativar avisos de novo agendamento"
+  );
+  sino.title = alertas.ligado ? "Avisos ligados" : "Avisos desligados";
+}
 
 // ---------------------------------------------------------------------
 // Avisos
@@ -111,6 +230,13 @@ async function iniciar() {
     if (MODO_DEMO) mostrarLogin();
   });
 
+  $("#btn-sino").addEventListener("click", () => alertas.alternar());
+
+  // ao voltar para o painel, some o ponto de nao lido
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) $("#sino-ponto").hidden = true;
+  });
+
   ligarNavegacao();
   ligarFolhas();
   ligarFormularios();
@@ -145,6 +271,8 @@ async function abrirApp() {
   $("#saudacao").textContent = saudacao(agora.getHours());
   $("#data-hoje").textContent = dataPorExtenso(agora).replace(/^./, (c) => c.toUpperCase());
 
+  atualizarSino();
+
   estado.servicos = await dados.lerServicos();
   montarServicos();
   escutarPeriodo();
@@ -173,7 +301,15 @@ function escutarPeriodo() {
       return;
     }
     estado.agendamentos = lista;
+    alertas.conferir(lista);
     redesenhar();
+  });
+
+  estado.cancelarEscutaBloqueios?.();
+  estado.cancelarEscutaBloqueios = dados.observarBloqueios((lista) => {
+    estado.bloqueios = lista;
+    desenharCalendario();
+    desenharDiaEscolhido();
   });
 }
 
@@ -225,6 +361,55 @@ function desenharHoje() {
   $("#lista-hoje").innerHTML = doDia.length
     ? doDia.map(cartaoHTML).join("")
     : vazioHTML("Dia livre", "Nenhum atendimento marcado para hoje.");
+
+  desenharProximos();
+}
+
+// ---------------------------------------------------------------------
+// Proximos dias: tudo que vem depois de hoje, agrupado por data
+// ---------------------------------------------------------------------
+
+function desenharProximos() {
+  const amanha = inicioDoDia(new Date());
+  amanha.setDate(amanha.getDate() + 1);
+
+  const futuros = estado.agendamentos
+    .filter((a) => a.inicio >= amanha && a.status !== "cancelado")
+    .sort((a, b) => a.inicio - b.inicio);
+
+  $("#contador-proximos").textContent = futuros.length
+    ? `${futuros.length} agendamento${futuros.length > 1 ? "s" : ""}`
+    : "";
+
+  if (!futuros.length) {
+    $("#lista-proximos").innerHTML = vazioHTML(
+      "Agenda livre",
+      "Nenhum atendimento marcado para os próximos dias."
+    );
+    return;
+  }
+
+  let html = "";
+  let ultimoDia = "";
+  for (const a of futuros) {
+    const k = chaveDia(a.inicio);
+    if (k !== ultimoDia) {
+      ultimoDia = k;
+      html += `<p class="dia-rotulo">${rotuloDia(a.inicio)}</p>`;
+    }
+    html += cartaoHTML(a);
+  }
+  $("#lista-proximos").innerHTML = html;
+}
+
+function rotuloDia(d) {
+  const hoje = inicioDoDia(new Date());
+  const alvo = inicioDoDia(d);
+  const dias = Math.round((alvo - hoje) / 86400000);
+
+  if (dias === 1) return "Amanhã";
+  if (dias < 7) return d.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "short" });
+  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "long" });
 }
 
 function atualizarContagem() {
@@ -308,14 +493,15 @@ function desenharCalendario() {
     const fora = d.getMonth() !== mes;
     const ehHoje = mesmoDia(d, hoje);
     const escolhido = mesmoDia(d, estado.diaEscolhido);
+    const bloqueado = !!diaBloqueado(d);
     const status = porDia.get(chaveDia(d));
 
     const pontos = status
       ? [...status].slice(0, 3).map((s) => `<i class="dia__ponto dia__ponto--${s}"></i>`).join("")
       : "";
 
-    html += `<button class="dia${fora ? " dia--fora" : ""}${ehHoje ? " dia--hoje" : ""}${escolhido ? " dia--escolhido" : ""}"
-      data-data="${chaveDia(d)}" aria-label="${d.getDate()} de ${d.toLocaleDateString("pt-BR",{month:"long"})}">
+    html += `<button class="dia${fora ? " dia--fora" : ""}${ehHoje ? " dia--hoje" : ""}${escolhido ? " dia--escolhido" : ""}${bloqueado ? " dia--bloqueado" : ""}"
+      data-data="${chaveDia(d)}" aria-label="${d.getDate()} de ${d.toLocaleDateString("pt-BR",{month:"long"})}${bloqueado ? ", sem atendimento" : ""}">
       <span>${d.getDate()}</span>
       <span class="dia__pontos">${pontos}</span>
     </button>`;
@@ -335,9 +521,18 @@ function desenharDiaEscolhido() {
     .filter((a) => mesmoDia(a.inicio, d))
     .sort((a, b) => a.inicio - b.inicio);
 
+  // estado de bloqueio do dia
+  const bloqueio = diaBloqueado(d);
+  $("#faixa-bloqueio").hidden = !bloqueio;
+  $("#btn-bloquear").textContent = bloqueio ? "Dia bloqueado" : "Bloquear dia";
+  $("#btn-bloquear").disabled = !!bloqueio;
+
   $("#lista-dia").innerHTML = lista.length
     ? lista.map(cartaoHTML).join("")
-    : vazioHTML("Nenhum atendimento", "Toque no + para marcar um horário.");
+    : vazioHTML(
+        bloqueio ? "Dia sem atendimento" : "Nenhum atendimento",
+        bloqueio ? "Este dia está bloqueado na agenda." : "Toque no + para marcar um horário."
+      );
 }
 
 function ligarCalendario() {
@@ -358,6 +553,43 @@ function ligarCalendario() {
     estado.diaEscolhido = new Date(a, m - 1, dd);
     desenharCalendario();
     desenharDiaEscolhido();
+  });
+
+  // bloquear o dia escolhido
+  $("#btn-bloquear").addEventListener("click", () => {
+    const d = estado.diaEscolhido;
+    const ativos = estado.agendamentos.filter(
+      (a) => mesmoDia(a.inicio, d) && a.status !== "cancelado"
+    );
+
+    const aviso = ativos.length
+      ? `Atenção: há ${ativos.length} atendimento${ativos.length > 1 ? "s" : ""} marcado${ativos.length > 1 ? "s" : ""} neste dia. Eles continuam na agenda, mas o dia deixa de aceitar novos agendamentos pelo site.`
+      : "O dia deixa de aparecer para quem tenta agendar pelo site.";
+
+    pedirConfirmacao(
+      `Bloquear ${dataPorExtenso(d)}?`,
+      aviso,
+      async () => {
+        try {
+          await dados.bloquearDia(d);
+          avisar("Dia bloqueado", "bom");
+        } catch {
+          avisar("Não foi possível bloquear", "ruim");
+        }
+      }
+    );
+  });
+
+  // liberar o dia
+  $("#btn-desbloquear").addEventListener("click", async () => {
+    const bloqueio = diaBloqueado(estado.diaEscolhido);
+    if (!bloqueio) return;
+    try {
+      await dados.desbloquear(bloqueio.id);
+      avisar("Dia liberado", "bom");
+    } catch {
+      avisar("Não foi possível liberar", "ruim");
+    }
   });
 }
 

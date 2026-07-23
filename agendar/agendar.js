@@ -23,8 +23,18 @@ const estado = {
   servico: null,
   dia: null,
   hora: null,
-  ocupados: []
+  ocupados: [],
+  bloqueios: []
 };
+
+const mesmoDiaQue = (a, b) =>
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate();
+
+// dia marcado pela profissional como sem atendimento
+const estaBloqueado = (d) =>
+  estado.bloqueios.some((b) => mesmoDiaQue(b.inicio, d) || (b.inicio <= d && d <= b.fim));
 
 // ---------------------------------------------------------------------
 
@@ -40,6 +50,25 @@ async function iniciar() {
   // 2) quando o banco responder, atualiza a lista sem travar a tela
   try {
     await dados.iniciar();
+
+    // dias bloqueados: redesenha a faixa de datas quando chegarem
+    dados.observarBloqueios((lista) => {
+      estado.bloqueios = lista || [];
+      const escolhido = estado.dia;
+      montarDias();
+      if (escolhido && !estaBloqueado(escolhido)) {
+        const alvo = [...$("#dias").children].find(
+          (c) => mesmoDiaQue(new Date(c.dataset.data), escolhido)
+        );
+        alvo?.classList.add("dia--escolhido");
+      } else if (escolhido) {
+        // o dia escolhido acabou de ser bloqueado
+        estado.dia = null; estado.hora = null;
+        $("#horarios").innerHTML = `<p class="sem-horario">Escolha outro dia.</p>`;
+        $("#btn-avancar").disabled = true;
+      }
+    });
+
     const doBanco = await dados.lerServicos();
     if (doBanco?.length) {
       const escolhido = estado.servico?.nome;
@@ -108,19 +137,31 @@ function montarDias() {
     d.setDate(hoje.getDate() + i);
     const semana = d.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "");
     const mes = d.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "");
+    const fechado = estaBloqueado(d);
     html += `
-      <button type="button" class="dia" data-data="${d.toISOString()}">
+      <button type="button" class="dia${fechado ? " dia--cheio" : ""}"
+              data-data="${d.toISOString()}" ${fechado ? "disabled" : ""}>
         <span class="dia__semana">${i === 0 ? "hoje" : semana}</span>
         <span class="dia__num">${d.getDate()}</span>
-        <span class="dia__mes">${mes}</span>
+        <span class="dia__mes">${fechado ? "fechado" : mes}</span>
       </button>`;
   }
 
   $("#dias").innerHTML = html;
+  ligarCliqueDia();
+}
+
+// registrado uma unica vez: montarDias() roda de novo quando os
+// bloqueios chegam do banco
+let cliqueDiaLigado = false;
+
+function ligarCliqueDia() {
+  if (cliqueDiaLigado) return;
+  cliqueDiaLigado = true;
 
   $("#dias").addEventListener("click", async (e) => {
     const btn = e.target.closest(".dia");
-    if (!btn) return;
+    if (!btn || btn.disabled) return;
     estado.dia = new Date(btn.dataset.data);
     estado.hora = null;
     [...$("#dias").children].forEach((c) =>
