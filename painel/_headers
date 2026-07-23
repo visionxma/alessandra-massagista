@@ -1,0 +1,12 @@
+# Headers de seguranca aplicados pelo Cloudflare Pages a todas as rotas.
+# Diferente do GitHub Pages, aqui os headers HTTP funcionam de verdade —
+# inclusive os que a meta tag ignora (frame-ancestors, HSTS).
+/*
+  Content-Security-Policy: default-src 'none'; script-src 'self' https://www.gstatic.com https://www.googleapis.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://firebaseinstallations.googleapis.com https://firebase.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; frame-src https://alessandra-massagista.firebaseapp.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=(), usb=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  X-Robots-Tag: noindex, nofollow
