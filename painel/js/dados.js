@@ -96,7 +96,9 @@ function paraObjeto(doc) {
     fim: d.fim?.toDate ? d.fim.toDate() : new Date(d.fim),
     status: d.status || "pendente",
     observacoes: d.observacoes || "",
-    origem: d.origem || "painel"
+    origem: d.origem || "painel",
+    precoCentavos: d.precoCentavos || 0,
+    lembreteEnviadoEm: d.lembreteEnviadoEm?.toDate ? d.lembreteEnviadoEm.toDate() : null
   };
 }
 
@@ -151,6 +153,9 @@ export async function criarAgendamento(dados) {
       status: dados.status || "pendente",
       observacoes: (dados.observacoes || "").trim(),
       origem: dados.origem || "painel",
+      // preco congelado no momento do agendamento: mudar a tabela
+      // depois nao altera o historico de faturamento
+      precoCentavos: Number(dados.precoCentavos) || 0,
       criadoEm: fb.serverTimestamp()
     });
 
@@ -201,7 +206,8 @@ export function observarBloqueios(callback) {
           id: d.id,
           inicio: x.inicio?.toDate ? x.inicio.toDate() : new Date(x.inicio),
           fim: x.fim?.toDate ? x.fim.toDate() : new Date(x.fim),
-          motivo: x.motivo || ""
+          motivo: x.motivo || "",
+          diaTodo: x.diaTodo !== false
         };
       }));
     },
@@ -212,13 +218,33 @@ export function observarBloqueios(callback) {
 export async function bloquearDia(data, motivo = "") {
   const inicio = new Date(data); inicio.setHours(0, 0, 0, 0);
   const fim = new Date(data); fim.setHours(23, 59, 59, 999);
+  return gravarBloqueio(inicio, fim, motivo, true);
+}
 
-  if (MODO_DEMO) return demo.bloquear(inicio, fim, motivo);
+// Bloqueia so uma faixa do dia (almoco, uma tarde, etc)
+export async function bloquearFaixa(data, horaInicio, horaFim, motivo = "") {
+  const [hi, mi] = horaInicio.split(":").map(Number);
+  const [hf, mf] = horaFim.split(":").map(Number);
+
+  const inicio = new Date(data); inicio.setHours(hi, mi, 0, 0);
+  const fim = new Date(data); fim.setHours(hf, mf, 0, 0);
+
+  if (fim <= inicio) {
+    const e = new Error("FAIXA_INVALIDA");
+    e.codigo = "FAIXA_INVALIDA";
+    throw e;
+  }
+  return gravarBloqueio(inicio, fim, motivo, false);
+}
+
+async function gravarBloqueio(inicio, fim, motivo, diaTodo) {
+  if (MODO_DEMO) return demo.bloquear(inicio, fim, motivo, diaTodo);
 
   const ref = await fb.addDoc(fb.collection(db, "bloqueios"), {
     inicio: fb.Timestamp.fromDate(inicio),
     fim: fb.Timestamp.fromDate(fim),
     motivo,
+    diaTodo,
     criadoEm: fb.serverTimestamp()
   });
   return ref.id;
@@ -227,6 +253,103 @@ export async function bloquearDia(data, motivo = "") {
 export async function desbloquear(id) {
   if (MODO_DEMO) return demo.desbloquear(id);
   await fb.deleteDoc(fb.doc(db, "bloqueios", id));
+}
+
+// ---------------------------------------------------------------------
+// Configuracao da agenda (horario de funcionamento)
+// ---------------------------------------------------------------------
+
+export const CONFIG_PADRAO = {
+  abreEm: "08:00",
+  fechaEm: "22:00",
+  intervaloMin: 60,        // de quanto em quanto tempo comeca um atendimento
+  antecedenciaMin: 60,     // nao aceita horario colado na hora atual
+  diasMaxFuturo: 21,
+  diasSemana: [0, 1, 2, 3, 4, 5, 6]   // 0 = domingo
+};
+
+export function observarConfig(callback) {
+  if (MODO_DEMO) return demo.observarConfig(callback);
+
+  return fb.onSnapshot(
+    fb.doc(db, "configuracao", "agenda"),
+    (snap) => callback(snap.exists() ? { ...CONFIG_PADRAO, ...snap.data() } : CONFIG_PADRAO),
+    () => callback(CONFIG_PADRAO)
+  );
+}
+
+export async function lerConfig() {
+  if (MODO_DEMO) return demo.lerConfig();
+  try {
+    const snap = await fb.getDoc(fb.doc(db, "configuracao", "agenda"));
+    return snap.exists() ? { ...CONFIG_PADRAO, ...snap.data() } : CONFIG_PADRAO;
+  } catch {
+    return CONFIG_PADRAO;
+  }
+}
+
+export async function salvarConfig(config) {
+  if (MODO_DEMO) return demo.salvarConfig(config);
+  await fb.setDoc(fb.doc(db, "configuracao", "agenda"), {
+    ...config,
+    atualizadoEm: fb.serverTimestamp()
+  }, { merge: true });
+}
+
+// ---------------------------------------------------------------------
+// Servicos: criar, editar e remover pelo painel
+// ---------------------------------------------------------------------
+
+export function observarServicos(callback) {
+  if (MODO_DEMO) return demo.observarServicos(callback);
+
+  return fb.onSnapshot(
+    fb.collection(db, "servicos"),
+    (snap) => {
+      const lista = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .filter((s) => s.ativo !== false)
+        .sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
+      callback(lista.length ? lista : SERVICOS_PADRAO);
+    },
+    () => callback(SERVICOS_PADRAO)
+  );
+}
+
+export async function salvarServico(servico) {
+  if (MODO_DEMO) return demo.salvarServico(servico);
+
+  const dados = {
+    nome: servico.nome.trim(),
+    descricao: (servico.descricao || "").trim(),
+    duracaoMin: Number(servico.duracaoMin) || 60,
+    precoCentavos: Number(servico.precoCentavos) || 0,
+    ordem: Number(servico.ordem) || 99,
+    ativo: true
+  };
+
+  if (servico.id) {
+    await fb.updateDoc(fb.doc(db, "servicos", servico.id), dados);
+    return servico.id;
+  }
+  const ref = await fb.addDoc(fb.collection(db, "servicos"), dados);
+  return ref.id;
+}
+
+export async function removerServico(id) {
+  if (MODO_DEMO) return demo.removerServico(id);
+  await fb.deleteDoc(fb.doc(db, "servicos", id));
+}
+
+// ---------------------------------------------------------------------
+// Lembrete: marca que o cliente ja foi avisado
+// ---------------------------------------------------------------------
+
+export async function marcarLembreteEnviado(id) {
+  if (MODO_DEMO) return demo.marcarLembrete(id);
+  await fb.updateDoc(fb.doc(db, "agendamentos", id), {
+    lembreteEnviadoEm: fb.serverTimestamp()
+  });
 }
 
 // ---------------------------------------------------------------------
@@ -324,12 +447,80 @@ const demo = {
     return () => this.ouvintesBloq.delete(emitir);
   },
 
-  bloquear(inicio, fim, motivo) {
+  bloquear(inicio, fim, motivo, diaTodo = true) {
     const lista = this.lerBloqueios();
     const id = "bloq_" + Math.random().toString(36).slice(2, 10);
-    lista.push({ id, inicio, fim, motivo });
+    lista.push({ id, inicio, fim, motivo, diaTodo });
     this.gravarBloqueios(lista);
     return id;
+  },
+
+  // --- configuracao no modo demonstracao ---
+  CHAVE_CFG: "agenda_demo_config_v1",
+  ouvintesCfg: new Set(),
+
+  lerConfig() {
+    try {
+      const cru = localStorage.getItem(this.CHAVE_CFG);
+      return cru ? { ...CONFIG_PADRAO, ...JSON.parse(cru) } : CONFIG_PADRAO;
+    } catch { return CONFIG_PADRAO; }
+  },
+
+  salvarConfig(cfg) {
+    localStorage.setItem(this.CHAVE_CFG, JSON.stringify(cfg));
+    for (const fn of this.ouvintesCfg) fn();
+  },
+
+  observarConfig(callback) {
+    const emitir = () => callback(this.lerConfig());
+    this.ouvintesCfg.add(emitir);
+    emitir();
+    return () => this.ouvintesCfg.delete(emitir);
+  },
+
+  // --- servicos no modo demonstracao ---
+  CHAVE_SRV: "agenda_demo_servicos_v1",
+  ouvintesSrv: new Set(),
+
+  lerServicosDemo() {
+    try {
+      const cru = localStorage.getItem(this.CHAVE_SRV);
+      return cru ? JSON.parse(cru) : SERVICOS_PADRAO.map((s, i) => ({ ...s, id: "srv_" + i, ordem: i + 1 }));
+    } catch { return SERVICOS_PADRAO; }
+  },
+
+  gravarServicos(lista) {
+    localStorage.setItem(this.CHAVE_SRV, JSON.stringify(lista));
+    for (const fn of this.ouvintesSrv) fn();
+  },
+
+  observarServicos(callback) {
+    const emitir = () => callback(this.lerServicosDemo());
+    this.ouvintesSrv.add(emitir);
+    emitir();
+    return () => this.ouvintesSrv.delete(emitir);
+  },
+
+  salvarServico(s) {
+    const lista = this.lerServicosDemo();
+    if (s.id) {
+      const i = lista.findIndex((x) => x.id === s.id);
+      if (i >= 0) lista[i] = { ...lista[i], ...s };
+    } else {
+      lista.push({ ...s, id: "srv_" + Math.random().toString(36).slice(2, 8) });
+    }
+    this.gravarServicos(lista);
+    return s.id;
+  },
+
+  removerServico(id) {
+    this.gravarServicos(this.lerServicosDemo().filter((s) => s.id !== id));
+  },
+
+  marcarLembrete(id) {
+    const lista = this.ler().map((a) =>
+      a.id === id ? { ...a, lembreteEnviadoEm: new Date() } : a);
+    this.gravar(lista);
   },
 
   desbloquear(id) {

@@ -10,11 +10,9 @@ const $ = (s) => document.querySelector(s);
 const doisDig = (n) => String(n).padStart(2, "0");
 const hhmm = (d) => `${doisDig(d.getHours())}:${doisDig(d.getMinutes())}`;
 
-// Horario de funcionamento e granularidade da grade
-const ABRE = 8;
-const FECHA = 22;
-const PASSO_MIN = 60;
-const ANTECEDENCIA_MIN = 60;   // nao aceita horario colado na hora atual
+// Horario de funcionamento: valores iniciais, substituidos pelo que a
+// profissional configurar no painel
+let cfg = { ...dados.CONFIG_PADRAO };
 const DIAS_VISIVEIS = 14;
 
 const estado = {
@@ -32,9 +30,13 @@ const mesmoDiaQue = (a, b) =>
   a.getMonth() === b.getMonth() &&
   a.getDate() === b.getDate();
 
-// dia marcado pela profissional como sem atendimento
-const estaBloqueado = (d) =>
-  estado.bloqueios.some((b) => mesmoDiaQue(b.inicio, d) || (b.inicio <= d && d <= b.fim));
+// dia fechado: bloqueio de dia inteiro, ou dia da semana em que nao atende.
+// Bloqueios de faixa nao fecham o dia, so tiram aqueles horarios.
+const estaBloqueado = (d) => {
+  const diaTodo = estado.bloqueios.some((b) => b.diaTodo !== false && mesmoDiaQue(b.inicio, d));
+  const diasAtendidos = cfg.diasSemana || [0, 1, 2, 3, 4, 5, 6];
+  return diaTodo || !diasAtendidos.includes(d.getDay());
+};
 
 // ---------------------------------------------------------------------
 
@@ -50,6 +52,20 @@ async function iniciar() {
   // 2) quando o banco responder, atualiza a lista sem travar a tela
   try {
     await dados.iniciar();
+
+    // horario de funcionamento definido pela profissional
+    dados.observarConfig((novaCfg) => {
+      cfg = { ...dados.CONFIG_PADRAO, ...novaCfg };
+      const escolhido = estado.dia;
+      montarDias();
+      if (escolhido && !estaBloqueado(escolhido)) {
+        const alvo = [...$("#dias").children].find(
+          (c) => mesmoDiaQue(new Date(c.dataset.data), escolhido)
+        );
+        alvo?.classList.add("dia--escolhido");
+        montarHorarios();
+      }
+    });
 
     // dias bloqueados: redesenha a faixa de datas quando chegarem
     dados.observarBloqueios((lista) => {
@@ -183,36 +199,41 @@ async function montarHorarios() {
   estado.ocupados = await lerOcupados(de, ate);
 
   const agora = new Date();
-  const limite = new Date(agora.getTime() + ANTECEDENCIA_MIN * 60000);
+  const limite = new Date(agora.getTime() + (cfg.antecedenciaMin || 0) * 60000);
   const duracao = estado.servico?.duracaoMin || 60;
+
+  // horario de funcionamento configurado no painel
+  const [hAbre, mAbre] = (cfg.abreEm || "08:00").split(":").map(Number);
+  const [hFecha, mFecha] = (cfg.fechaEm || "22:00").split(":").map(Number);
+  const passo = cfg.intervaloMin || 60;
+
+  const abertura = new Date(dia); abertura.setHours(hAbre, mAbre, 0, 0);
+  const fechamento = new Date(dia); fechamento.setHours(hFecha, mFecha, 0, 0);
+
+  // faixas bloqueadas neste dia (almoco, uma tarde, etc)
+  const faixasBloqueadas = estado.bloqueios.filter((b) => mesmoDiaQue(b.inicio, dia));
 
   let html = "";
   let disponiveis = 0;
 
-  for (let h = ABRE; h < FECHA; h++) {
-    for (let m = 0; m < 60; m += PASSO_MIN) {
-      const inicio = new Date(dia);
-      inicio.setHours(h, m, 0, 0);
-      const fim = new Date(inicio.getTime() + duracao * 60000);
+  for (let t = new Date(abertura); t < fechamento; t = new Date(t.getTime() + passo * 60000)) {
+    const inicio = new Date(t);
+    const fim = new Date(inicio.getTime() + duracao * 60000);
 
-      // nao pode terminar depois do fechamento
-      const fechamento = new Date(dia);
-      fechamento.setHours(FECHA, 0, 0, 0);
-      if (fim > fechamento) continue;
+    // o atendimento nao pode terminar depois do fechamento
+    if (fim > fechamento) continue;
 
-      const passou = inicio < limite;
-      const ocupado = estado.ocupados.some(
-        (o) => inicio < o.fim && fim > o.inicio
-      );
+    const passou = inicio < limite;
+    const ocupado = estado.ocupados.some((o) => inicio < o.fim && fim > o.inicio);
+    const bloqueado = faixasBloqueadas.some((b) => inicio < b.fim && fim > b.inicio);
 
-      const indisponivel = passou || ocupado;
-      if (!indisponivel) disponiveis++;
+    const indisponivel = passou || ocupado || bloqueado;
+    if (!indisponivel) disponiveis++;
 
-      html += `<button type="button"
-        class="hora${indisponivel ? " hora--ocupada" : ""}"
-        data-hora="${inicio.toISOString()}"
-        ${indisponivel ? "disabled" : ""}>${hhmm(inicio)}</button>`;
-    }
+    html += `<button type="button"
+      class="hora${indisponivel ? " hora--ocupada" : ""}"
+      data-hora="${inicio.toISOString()}"
+      ${indisponivel ? "disabled" : ""}>${hhmm(inicio)}</button>`;
   }
 
   alvo.innerHTML = disponiveis
@@ -299,6 +320,7 @@ function ligarFormulario() {
         clienteContato: $("#contato").value.trim(),
         servicoNome: estado.servico.nome,
         duracaoMin: estado.servico.duracaoMin,
+        precoCentavos: estado.servico.precoCentavos || 0,
         inicio: estado.hora,
         observacoes: $("#obs").value.trim(),
         status: "pendente",

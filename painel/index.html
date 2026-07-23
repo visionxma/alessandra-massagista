@@ -108,6 +108,7 @@
           <h2 class="secao-titulo">Próximos dias</h2>
           <span class="contador" id="contador-proximos"></span>
         </div>
+        <p class="dica-lembrete" id="aviso-lembretes" hidden></p>
         <div id="lista-proximos" class="lista"></div>
       </section>
 
@@ -139,19 +140,101 @@
         <div id="lista-dia" class="lista"></div>
       </section>
 
+      <!-- ---------- FATURAMENTO ---------- -->
+      <section class="aba" id="aba-caixa" hidden>
+        <div class="periodo" role="group" aria-label="Período do faturamento">
+          <button class="chip chip--ativo" data-periodo="dia">Hoje</button>
+          <button class="chip" data-periodo="semana">Semana</button>
+          <button class="chip" data-periodo="mes">Mês</button>
+        </div>
+
+        <div class="caixa-total">
+          <span class="caixa-total__rot" id="caixa-rotulo">Hoje</span>
+          <span class="caixa-total__valor" id="caixa-valor">R$ 0,00</span>
+          <span class="caixa-total__sub" id="caixa-sub">Nenhum atendimento concluído</span>
+        </div>
+
+        <div class="resumo">
+          <div class="resumo__item">
+            <span class="resumo__n" id="caixa-concluidos">0</span>
+            <span class="resumo__rot">Concluídos</span>
+          </div>
+          <div class="resumo__item resumo__item--atencao">
+            <span class="resumo__n" id="caixa-previsto">0</span>
+            <span class="resumo__rot">A realizar</span>
+          </div>
+          <div class="resumo__item">
+            <span class="resumo__n" id="caixa-cancelados">0</span>
+            <span class="resumo__rot">Cancelados</span>
+          </div>
+        </div>
+
+        <h2 class="secao-titulo">Por serviço</h2>
+        <div id="caixa-servicos" class="lista"></div>
+
+        <p class="nota-rodape" id="caixa-nota" hidden>
+          Valores contam apenas atendimentos concluídos.
+        </p>
+      </section>
+
+      <!-- ---------- AJUSTES ---------- -->
+      <section class="aba" id="aba-ajustes" hidden>
+
+        <h2 class="secao-titulo">Horário de funcionamento</h2>
+        <div class="cartao-form">
+          <div class="dupla">
+            <label class="campo">
+              <span class="campo__rotulo">Abre às</span>
+              <input type="time" id="cfg-abre" step="900" />
+            </label>
+            <label class="campo">
+              <span class="campo__rotulo">Fecha às</span>
+              <input type="time" id="cfg-fecha" step="900" />
+            </label>
+          </div>
+
+          <label class="campo">
+            <span class="campo__rotulo">Intervalo entre horários</span>
+            <select id="cfg-intervalo">
+              <option value="30">A cada 30 minutos</option>
+              <option value="60">A cada 1 hora</option>
+              <option value="90">A cada 1h30</option>
+              <option value="120">A cada 2 horas</option>
+            </select>
+          </label>
+
+          <div class="campo">
+            <span class="campo__rotulo">Dias que atende</span>
+            <div class="semana" id="cfg-dias"></div>
+          </div>
+
+          <label class="campo">
+            <span class="campo__rotulo">Antecedência mínima</span>
+            <select id="cfg-antecedencia">
+              <option value="0">Sem antecedência</option>
+              <option value="30">30 minutos</option>
+              <option value="60">1 hora</option>
+              <option value="120">2 horas</option>
+              <option value="720">12 horas</option>
+              <option value="1440">1 dia</option>
+            </select>
+          </label>
+
+          <button class="btn btn--principal btn--bloco" id="btn-salvar-cfg">Salvar horários</button>
+        </div>
+
+        <div class="secao-cabeca">
+          <h2 class="secao-titulo">Serviços e preços</h2>
+          <button class="btn-mini" id="btn-novo-servico">Adicionar</button>
+        </div>
+        <div id="lista-servicos" class="lista"></div>
+      </section>
+
       <!-- ---------- HISTÓRICO ---------- -->
       <section class="aba" id="aba-historico" hidden>
         <div class="busca">
           <svg class="busca__icone" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
           <input type="search" id="campo-busca" placeholder="Buscar por nome do cliente" aria-label="Buscar cliente" />
-        </div>
-
-        <div class="filtros" role="group" aria-label="Filtrar por situação">
-          <button class="chip chip--ativo" data-filtro="todos">Todos</button>
-          <button class="chip" data-filtro="pendente">A confirmar</button>
-          <button class="chip" data-filtro="confirmado">Confirmados</button>
-          <button class="chip" data-filtro="concluido">Concluídos</button>
-          <button class="chip" data-filtro="cancelado">Cancelados</button>
         </div>
 
         <div id="lista-historico" class="lista"></div>
@@ -174,9 +257,17 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 10h18M8 3v4M16 3v4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         <span>Agenda</span>
       </button>
+      <button class="barra__item" data-aba="caixa">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 19V9M9 19V5M14 19v-7M19 19v-4"/></svg>
+        <span>Caixa</span>
+      </button>
       <button class="barra__item" data-aba="historico">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3.5 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-        <span>Histórico</span>
+        <span>Clientes</span>
+      </button>
+      <button class="barra__item" data-aba="ajustes">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Ajustes</span>
       </button>
     </nav>
   </div>
@@ -244,6 +335,138 @@
             <button type="submit" class="btn btn--principal" id="btn-salvar">Salvar</button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ EDITAR SERVIÇO ============ -->
+  <div class="folha" id="folha-servico" hidden>
+    <div class="folha__fundo" data-fechar></div>
+    <div class="folha__painel" role="dialog" aria-modal="true" aria-labelledby="titulo-servico">
+      <div class="folha__puxador" aria-hidden="true"></div>
+      <div class="folha__corpo">
+        <h2 class="folha__titulo" id="titulo-servico">Novo serviço</h2>
+
+        <form id="form-servico" novalidate>
+          <label class="campo">
+            <span class="campo__rotulo">Nome</span>
+            <input type="text" id="srv-nome" required maxlength="60" placeholder="Ex.: Massagem relaxante" />
+          </label>
+
+          <label class="campo">
+            <span class="campo__rotulo">Descrição <em>(aparece no site)</em></span>
+            <textarea id="srv-desc" rows="2" maxlength="200" placeholder="Uma frase curta sobre o serviço"></textarea>
+          </label>
+
+          <div class="dupla">
+            <label class="campo">
+              <span class="campo__rotulo">Duração</span>
+              <select id="srv-duracao">
+                <option value="30">30 min</option>
+                <option value="45">45 min</option>
+                <option value="60">1 hora</option>
+                <option value="90">1h30</option>
+                <option value="120">2 horas</option>
+              </select>
+            </label>
+            <label class="campo">
+              <span class="campo__rotulo">Preço em reais</span>
+              <input type="text" id="srv-preco" inputmode="decimal" placeholder="180,00" />
+              <span class="previa" id="srv-preco-previa"></span>
+            </label>
+          </div>
+
+          <p class="alerta" id="srv-erro" hidden></p>
+
+          <div class="acoes">
+            <button type="submit" class="btn btn--principal btn--bloco" id="btn-salvar-srv">Salvar</button>
+            <button type="button" class="btn btn--neutro btn--bloco" id="btn-excluir-srv" hidden>Excluir serviço</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ BLOQUEAR HORÁRIO ============ -->
+  <div class="folha" id="folha-bloqueio" hidden>
+    <div class="folha__fundo" data-fechar></div>
+    <div class="folha__painel" role="dialog" aria-modal="true" aria-labelledby="titulo-bloqueio">
+      <div class="folha__puxador" aria-hidden="true"></div>
+      <div class="folha__corpo">
+        <h2 class="folha__titulo" id="titulo-bloqueio">Bloquear horário</h2>
+        <p class="folha__texto" id="bloqueio-dia">—</p>
+
+        <div class="opcoes" id="bloqueio-tipo">
+          <button type="button" class="opcao opcao--escolhida" data-tipo="dia">
+            <span class="opcao__nome">O dia todo</span>
+            <span class="opcao__tempo">Sem atendimento</span>
+          </button>
+          <button type="button" class="opcao" data-tipo="faixa">
+            <span class="opcao__nome">Só um período</span>
+            <span class="opcao__tempo">Almoço, tarde...</span>
+          </button>
+        </div>
+
+        <div id="bloqueio-faixa" hidden>
+          <div class="dupla" style="margin-top: 1rem">
+            <label class="campo">
+              <span class="campo__rotulo">Das</span>
+              <input type="time" id="bloq-de" step="900" value="12:00" />
+            </label>
+            <label class="campo">
+              <span class="campo__rotulo">Até</span>
+              <input type="time" id="bloq-ate" step="900" value="14:00" />
+            </label>
+          </div>
+        </div>
+
+        <label class="campo" style="margin-top: 0.5rem">
+          <span class="campo__rotulo">Motivo <em>(opcional, só você vê)</em></span>
+          <input type="text" id="bloq-motivo" maxlength="60" placeholder="Ex.: almoço, consulta" />
+        </label>
+
+        <p class="alerta" id="bloq-erro" hidden></p>
+
+        <div class="acoes acoes--fim">
+          <button type="button" class="btn btn--neutro" data-fechar>Cancelar</button>
+          <button type="button" class="btn btn--principal" id="btn-confirmar-bloqueio">Bloquear</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ FICHA DO CLIENTE ============ -->
+  <div class="folha" id="folha-cliente" hidden>
+    <div class="folha__fundo" data-fechar></div>
+    <div class="folha__painel" role="dialog" aria-modal="true" aria-labelledby="cliente-nome">
+      <div class="folha__puxador" aria-hidden="true"></div>
+      <div class="folha__corpo">
+        <h2 class="folha__titulo" id="cliente-nome">—</h2>
+
+        <div class="resumo" style="margin-bottom: 1.3rem">
+          <div class="resumo__item">
+            <span class="resumo__n" id="cli-sessoes">0</span>
+            <span class="resumo__rot">Sessões</span>
+          </div>
+          <div class="resumo__item">
+            <span class="resumo__n" id="cli-gasto">—</span>
+            <span class="resumo__rot">Total gasto</span>
+          </div>
+          <div class="resumo__item">
+            <span class="resumo__n" id="cli-faltas">0</span>
+            <span class="resumo__rot">Cancelou</span>
+          </div>
+        </div>
+
+        <dl class="ficha">
+          <div id="cli-linha-contato"><dt>Contato</dt><dd id="cli-contato">—</dd></div>
+          <div><dt>Preferido</dt><dd id="cli-preferido">—</dd></div>
+          <div><dt>Primeira vez</dt><dd id="cli-primeira">—</dd></div>
+          <div id="cli-linha-obs"><dt>Observações</dt><dd id="cli-obs">—</dd></div>
+        </dl>
+
+        <h3 class="secao-titulo">Histórico</h3>
+        <div id="cli-historico" class="lista"></div>
       </div>
     </div>
   </div>

@@ -51,14 +51,57 @@ const estado = {
   busca: "",
   servicos: dados.SERVICOS_PADRAO,
   servicoEscolhido: 0,
+  config: dados.CONFIG_PADRAO,
+  periodoCaixa: "dia",
   cancelarEscuta: null,
   cancelarEscutaBloqueios: null,
+  cancelarEscutaConfig: null,
+  cancelarEscutaServicos: null,
   carregando: true
 };
 
+// bloqueio de dia inteiro
 const diaBloqueado = (d) =>
-  estado.bloqueios.find((b) => b.inicio <= d && d <= b.fim) ||
-  estado.bloqueios.find((b) => mesmoDia(b.inicio, d));
+  estado.bloqueios.find((b) => b.diaTodo !== false && mesmoDia(b.inicio, d));
+
+// todos os bloqueios que tocam este dia, inclusive faixas
+const bloqueiosDoDia = (d) =>
+  estado.bloqueios
+    .filter((b) => mesmoDia(b.inicio, d))
+    .sort((a, b) => a.inicio - b.inicio);
+
+// ---------------------------------------------------------------------
+// Dinheiro
+// ---------------------------------------------------------------------
+
+const emReais = (centavos) =>
+  (Number(centavos) || 0).toLocaleString("pt-BR", {
+    style: "currency", currency: "BRL", minimumFractionDigits: 2
+  }).replace(/ /g, " ");
+
+// Aceita "150", "150,00", "R$ 1.500,50" e tambem "150.50".
+// O separador decimal e o ULTIMO ponto ou virgula; o que vier antes
+// e separador de milhar e some.
+function paraCentavos(texto) {
+  const so = String(texto).replace(/[^\d.,]/g, "");
+  if (!so) return 0;
+
+  const ultimoSep = Math.max(so.lastIndexOf(","), so.lastIndexOf("."));
+  let inteiros = so, decimais = "";
+
+  if (ultimoSep !== -1) {
+    const depois = so.slice(ultimoSep + 1);
+    // 1 ou 2 digitos apos o separador = centavos; 3 digitos = milhar
+    if (depois.length <= 2 && depois.length > 0) {
+      inteiros = so.slice(0, ultimoSep);
+      decimais = depois;
+    }
+  }
+
+  const n = Number(inteiros.replace(/[.,]/g, "")) || 0;
+  const c = Number(decimais.padEnd(2, "0")) || 0;
+  return n * 100 + c;
+}
 
 // ---------------------------------------------------------------------
 // Avisos de novo agendamento: som, vibracao e notificacao do sistema
@@ -242,6 +285,9 @@ async function iniciar() {
   ligarFormularios();
   ligarFiltros();
   ligarCalendario();
+  ligarCaixa();
+  ligarAjustes();
+  ligarServicos();
   monitorarConexao();
   registrarPWA();
 }
@@ -311,6 +357,19 @@ function escutarPeriodo() {
     desenharCalendario();
     desenharDiaEscolhido();
   });
+
+  estado.cancelarEscutaConfig?.();
+  estado.cancelarEscutaConfig = dados.observarConfig((cfg) => {
+    estado.config = cfg;
+    preencherAjustes();
+  });
+
+  estado.cancelarEscutaServicos?.();
+  estado.cancelarEscutaServicos = dados.observarServicos((lista) => {
+    estado.servicos = lista;
+    montarServicos();
+    desenharListaServicos();
+  });
 }
 
 function mostrarEsqueleto() {
@@ -323,7 +382,8 @@ function redesenhar() {
   desenharHoje();
   desenharCalendario();
   desenharDiaEscolhido();
-  desenharHistorico();
+  desenharClientes();
+  desenharCaixa();
 }
 
 // ---------------------------------------------------------------------
@@ -381,6 +441,8 @@ function desenharProximos() {
     ? `${futuros.length} agendamento${futuros.length > 1 ? "s" : ""}`
     : "";
 
+  avisarLembretesPendentes(futuros);
+
   if (!futuros.length) {
     $("#lista-proximos").innerHTML = vazioHTML(
       "Agenda livre",
@@ -400,6 +462,27 @@ function desenharProximos() {
     html += cartaoHTML(a);
   }
   $("#lista-proximos").innerHTML = html;
+}
+
+// Destaca os atendimentos de amanha que ainda nao receberam lembrete.
+// O envio continua manual: um site estatico nao dispara nada sozinho.
+function avisarLembretesPendentes(futuros) {
+  const amanha = inicioDoDia(new Date());
+  amanha.setDate(amanha.getDate() + 1);
+
+  const pendentes = futuros.filter(
+    (a) => mesmoDia(a.inicio, amanha) && a.clienteContato && !a.lembreteEnviadoEm
+  );
+
+  const alvo = $("#aviso-lembretes");
+  if (!alvo) return;
+
+  alvo.hidden = !pendentes.length;
+  if (pendentes.length) {
+    alvo.textContent = pendentes.length === 1
+      ? "1 cliente atendido amanhã ainda não recebeu lembrete"
+      : `${pendentes.length} clientes atendidos amanhã ainda não receberam lembrete`;
+  }
 }
 
 function rotuloDia(d) {
@@ -521,17 +604,27 @@ function desenharDiaEscolhido() {
     .filter((a) => mesmoDia(a.inicio, d))
     .sort((a, b) => a.inicio - b.inicio);
 
-  // estado de bloqueio do dia
-  const bloqueio = diaBloqueado(d);
-  $("#faixa-bloqueio").hidden = !bloqueio;
-  $("#btn-bloquear").textContent = bloqueio ? "Dia bloqueado" : "Bloquear dia";
-  $("#btn-bloquear").disabled = !!bloqueio;
+  // bloqueios do dia: dia inteiro e/ou faixas
+  const bloqueios = bloqueiosDoDia(d);
+  const diaInteiro = bloqueios.find((b) => b.diaTodo !== false);
+
+  $("#faixa-bloqueio").hidden = !bloqueios.length;
+  $("#faixa-bloqueio").innerHTML = bloqueios.map((b) => `
+    <span class="faixa-bloqueio__linha">
+      <span>${b.diaTodo !== false
+        ? "Dia sem atendimento"
+        : `Bloqueado das ${hhmm(b.inicio)} às ${hhmm(b.fim)}`}${b.motivo ? " · " + escapar(b.motivo) : ""}</span>
+      <button class="link-mini" data-liberar="${b.id}">Liberar</button>
+    </span>`).join("");
+
+  $("#btn-bloquear").textContent = diaInteiro ? "Dia bloqueado" : "Bloquear";
+  $("#btn-bloquear").disabled = !!diaInteiro;
 
   $("#lista-dia").innerHTML = lista.length
     ? lista.map(cartaoHTML).join("")
     : vazioHTML(
-        bloqueio ? "Dia sem atendimento" : "Nenhum atendimento",
-        bloqueio ? "Este dia está bloqueado na agenda." : "Toque no + para marcar um horário."
+        diaInteiro ? "Dia sem atendimento" : "Nenhum atendimento",
+        diaInteiro ? "Este dia está bloqueado na agenda." : "Toque no + para marcar um horário."
       );
 }
 
@@ -555,99 +648,459 @@ function ligarCalendario() {
     desenharDiaEscolhido();
   });
 
-  // bloquear o dia escolhido
+  // abre a folha de bloqueio (dia inteiro ou so uma faixa)
   $("#btn-bloquear").addEventListener("click", () => {
     const d = estado.diaEscolhido;
-    const ativos = estado.agendamentos.filter(
-      (a) => mesmoDia(a.inicio, d) && a.status !== "cancelado"
-    );
-
-    const aviso = ativos.length
-      ? `Atenção: há ${ativos.length} atendimento${ativos.length > 1 ? "s" : ""} marcado${ativos.length > 1 ? "s" : ""} neste dia. Eles continuam na agenda, mas o dia deixa de aceitar novos agendamentos pelo site.`
-      : "O dia deixa de aparecer para quem tenta agendar pelo site.";
-
-    pedirConfirmacao(
-      `Bloquear ${dataPorExtenso(d)}?`,
-      aviso,
-      async () => {
-        try {
-          await dados.bloquearDia(d);
-          avisar("Dia bloqueado", "bom");
-        } catch {
-          avisar("Não foi possível bloquear", "ruim");
-        }
-      }
-    );
+    $("#bloqueio-dia").textContent = dataPorExtenso(d).replace(/^./, (c) => c.toUpperCase());
+    $("#bloq-erro").hidden = true;
+    $("#bloq-motivo").value = "";
+    escolherTipoBloqueio("dia");
+    abrir("#folha-bloqueio");
   });
 
-  // liberar o dia
-  $("#btn-desbloquear").addEventListener("click", async () => {
-    const bloqueio = diaBloqueado(estado.diaEscolhido);
-    if (!bloqueio) return;
+  // alterna entre dia inteiro e faixa
+  $("#bloqueio-tipo").addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-tipo]");
+    if (btn) escolherTipoBloqueio(btn.dataset.tipo);
+  });
+
+  $("#btn-confirmar-bloqueio").addEventListener("click", async () => {
+    const d = estado.diaEscolhido;
+    const tipo = $("#bloqueio-tipo .opcao--escolhida")?.dataset.tipo || "dia";
+    const motivo = $("#bloq-motivo").value.trim();
+    const erro = $("#bloq-erro");
+    const botao = $("#btn-confirmar-bloqueio");
+    erro.hidden = true;
+
+    botao.disabled = true;
+    botao.textContent = "Bloqueando...";
+
     try {
-      await dados.desbloquear(bloqueio.id);
-      avisar("Dia liberado", "bom");
+      if (tipo === "dia") {
+        await dados.bloquearDia(d, motivo);
+        avisar("Dia bloqueado", "bom");
+      } else {
+        await dados.bloquearFaixa(d, $("#bloq-de").value, $("#bloq-ate").value, motivo);
+        avisar("Horário bloqueado", "bom");
+      }
+      fechar("#folha-bloqueio");
+    } catch (ex) {
+      erro.textContent = ex?.codigo === "FAIXA_INVALIDA"
+        ? "O horário final deve ser depois do inicial."
+        : "Não foi possível bloquear. Tente de novo.";
+      erro.hidden = false;
+    } finally {
+      botao.disabled = false;
+      botao.textContent = "Bloquear";
+    }
+  });
+
+  // liberar bloqueios do dia (toque na faixa vermelha)
+  $("#faixa-bloqueio").addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-liberar]");
+    if (!btn) return;
+    try {
+      await dados.desbloquear(btn.dataset.liberar);
+      avisar("Horário liberado", "bom");
     } catch {
       avisar("Não foi possível liberar", "ruim");
     }
   });
 }
 
+function escolherTipoBloqueio(tipo) {
+  $$("#bloqueio-tipo .opcao").forEach((b) =>
+    b.classList.toggle("opcao--escolhida", b.dataset.tipo === tipo));
+  $("#bloqueio-faixa").hidden = tipo !== "faixa";
+}
+
 // ---------------------------------------------------------------------
 // Aba: Historico
 // ---------------------------------------------------------------------
 
-function desenharHistorico() {
+// (a aba Historico virou lista de Clientes: ver desenharClientes)
+
+function ligarFiltros() {
+  let debounce;
+  $("#campo-busca").addEventListener("input", (e) => {
+    clearTimeout(debounce);
+    debounce = setTimeout(() => {
+      estado.busca = e.target.value;
+      desenharClientes();
+    }, 180);
+  });
+}
+
+// ---------------------------------------------------------------------
+// Faturamento
+// ---------------------------------------------------------------------
+
+function periodoAtual() {
+  const hoje = new Date();
+  const de = inicioDoDia(hoje);
+  const ate = fimDoDia(hoje);
+
+  if (estado.periodoCaixa === "semana") {
+    de.setDate(de.getDate() - de.getDay());          // domingo
+    ate.setDate(de.getDate() + 6);
+    ate.setHours(23, 59, 59, 999);
+  } else if (estado.periodoCaixa === "mes") {
+    de.setDate(1);
+    ate.setMonth(ate.getMonth() + 1, 0);
+    ate.setHours(23, 59, 59, 999);
+  }
+  return { de, ate };
+}
+
+function desenharCaixa() {
+  const { de, ate } = periodoAtual();
+  const noPeriodo = estado.agendamentos.filter((a) => a.inicio >= de && a.inicio <= ate);
+
+  const concluidos = noPeriodo.filter((a) => a.status === "concluido");
+  const previstos = noPeriodo.filter((a) => a.status === "pendente" || a.status === "confirmado");
+  const cancelados = noPeriodo.filter((a) => a.status === "cancelado");
+
+  const precoDe = (a) => a.precoCentavos || precoDoServico(a.servicoNome);
+  const total = concluidos.reduce((s, a) => s + precoDe(a), 0);
+  const aReceber = previstos.reduce((s, a) => s + precoDe(a), 0);
+
+  const rotulos = { dia: "Hoje", semana: "Esta semana", mes: "Este mês" };
+  $("#caixa-rotulo").textContent = rotulos[estado.periodoCaixa];
+  $("#caixa-valor").textContent = emReais(total);
+
+  $("#caixa-sub").textContent = concluidos.length
+    ? `${concluidos.length} atendimento${concluidos.length > 1 ? "s" : ""} concluído${concluidos.length > 1 ? "s" : ""}` +
+      (aReceber ? ` · ${emReais(aReceber)} a realizar` : "")
+    : "Nenhum atendimento concluído ainda";
+
+  $("#caixa-concluidos").textContent = concluidos.length;
+  $("#caixa-previsto").textContent = previstos.length;
+  $("#caixa-cancelados").textContent = cancelados.length;
+
+  // agrupa por servico
+  const porServico = new Map();
+  for (const a of concluidos) {
+    const chave = a.servicoNome || "Outro";
+    const atual = porServico.get(chave) || { qtd: 0, total: 0 };
+    atual.qtd += 1;
+    atual.total += precoDe(a);
+    porServico.set(chave, atual);
+  }
+
+  const linhas = [...porServico.entries()].sort((a, b) => b[1].total - a[1].total);
+
+  $("#caixa-servicos").innerHTML = linhas.length
+    ? linhas.map(([nome, v]) => `
+        <div class="linha-servico">
+          <span class="linha-servico__nome">${escapar(nome)}</span>
+          <span class="linha-servico__valor">${emReais(v.total)}</span>
+          <span class="linha-servico__qtd">${v.qtd} atendimento${v.qtd > 1 ? "s" : ""}</span>
+        </div>`).join("")
+    : vazioHTML("Sem movimento", "Marque atendimentos como concluídos para ver o faturamento.");
+
+  $("#caixa-nota").hidden = !linhas.length;
+}
+
+function precoDoServico(nome) {
+  const s = estado.servicos.find((x) => x.nome === nome);
+  return s?.precoCentavos || 0;
+}
+
+function ligarCaixa() {
+  $$("[data-periodo]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      $$("[data-periodo]").forEach((b) => b.classList.toggle("chip--ativo", b === btn));
+      estado.periodoCaixa = btn.dataset.periodo;
+      desenharCaixa();
+    });
+  });
+}
+
+// ---------------------------------------------------------------------
+// Clientes: agrupa o historico por pessoa
+// ---------------------------------------------------------------------
+
+function agruparClientes() {
+  const mapa = new Map();
+
+  for (const a of estado.agendamentos) {
+    const chave = a.clienteNome.trim().toLowerCase();
+    if (!chave) continue;
+
+    const atual = mapa.get(chave) || {
+      nome: a.clienteNome.trim(),
+      contato: "",
+      sessoes: 0,
+      cancelados: 0,
+      gasto: 0,
+      primeira: a.inicio,
+      ultima: a.inicio,
+      servicos: new Map(),
+      observacoes: [],
+      itens: []
+    };
+
+    atual.itens.push(a);
+    if (a.clienteContato && !atual.contato) atual.contato = a.clienteContato;
+    if (a.observacoes) atual.observacoes.push(a.observacoes);
+
+    if (a.status === "concluido") {
+      atual.sessoes += 1;
+      atual.gasto += a.precoCentavos || precoDoServico(a.servicoNome);
+      atual.servicos.set(a.servicoNome, (atual.servicos.get(a.servicoNome) || 0) + 1);
+    }
+    if (a.status === "cancelado") atual.cancelados += 1;
+
+    if (a.inicio < atual.primeira) atual.primeira = a.inicio;
+    if (a.inicio > atual.ultima) atual.ultima = a.inicio;
+
+    mapa.set(chave, atual);
+  }
+
+  return [...mapa.values()].sort((a, b) => b.ultima - a.ultima);
+}
+
+function desenharClientes() {
   const termo = estado.busca.trim().toLowerCase();
+  let lista = agruparClientes();
 
-  let lista = [...estado.agendamentos].sort((a, b) => b.inicio - a.inicio);
-
-  if (estado.filtro !== "todos") lista = lista.filter((a) => a.status === estado.filtro);
-  if (termo) lista = lista.filter((a) => a.clienteNome.toLowerCase().includes(termo));
+  if (termo) lista = lista.filter((c) => c.nome.toLowerCase().includes(termo));
 
   const alvo = $("#lista-historico");
 
   if (!lista.length) {
     alvo.innerHTML = termo
       ? vazioHTML("Nada encontrado", `Nenhum cliente com "${escapar(termo)}".`)
-      : vazioHTML("Sem registros", "Os atendimentos aparecem aqui.");
+      : vazioHTML("Sem clientes", "Os clientes aparecem aqui depois do primeiro atendimento.");
     return;
   }
 
-  // agrupa por dia, com cabecalho
-  let html = "";
-  let ultimoDia = "";
-  for (const a of lista.slice(0, 120)) {
-    const k = chaveDia(a.inicio);
-    if (k !== ultimoDia) {
-      ultimoDia = k;
-      const rot = mesmoDia(a.inicio, new Date())
-        ? "Hoje"
-        : a.inicio.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
-      html += `<h3 class="secao-titulo">${rot}</h3>`;
-    }
-    html += cartaoHTML(a);
-  }
-  alvo.innerHTML = html;
+  alvo.innerHTML = lista.map((c) => {
+    const inicial = c.nome.trim()[0]?.toUpperCase() || "?";
+    const quando = mesmoDia(c.ultima, new Date())
+      ? "hoje"
+      : c.ultima.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+    return `
+      <button class="cliente-cartao" data-cliente="${escapar(c.nome)}">
+        <span class="avatar">${escapar(inicial)}</span>
+        <span>
+          <span class="cliente-cartao__nome">${escapar(c.nome)}</span>
+          <span class="cliente-cartao__meta">Último: ${quando}${c.gasto ? " · " + emReais(c.gasto) : ""}</span>
+        </span>
+        <span class="selo-sessoes">${c.sessoes}</span>
+      </button>`;
+  }).join("");
 }
 
-function ligarFiltros() {
-  $$(".chip").forEach((chip) => {
-    chip.addEventListener("click", () => {
-      $$(".chip").forEach((c) => c.classList.remove("chip--ativo"));
-      chip.classList.add("chip--ativo");
-      estado.filtro = chip.dataset.filtro;
-      desenharHistorico();
-    });
+function abrirCliente(nome) {
+  const c = agruparClientes().find((x) => x.nome === nome);
+  if (!c) return;
+
+  $("#cliente-nome").textContent = c.nome;
+  $("#cli-sessoes").textContent = c.sessoes;
+  $("#cli-gasto").textContent = c.gasto ? emReais(c.gasto) : "—";
+  $("#cli-faltas").textContent = c.cancelados;
+
+  $("#cli-linha-contato").hidden = !c.contato;
+  $("#cli-contato").textContent = c.contato || "";
+
+  const favorito = [...c.servicos.entries()].sort((a, b) => b[1] - a[1])[0];
+  $("#cli-preferido").textContent = favorito ? `${favorito[0]} (${favorito[1]}x)` : "—";
+
+  $("#cli-primeira").textContent = c.primeira.toLocaleDateString("pt-BR", {
+    day: "2-digit", month: "long", year: "numeric"
   });
 
-  let debounce;
-  $("#campo-busca").addEventListener("input", (e) => {
-    clearTimeout(debounce);
-    debounce = setTimeout(() => {
-      estado.busca = e.target.value;
-      desenharHistorico();
-    }, 180);
+  const obs = [...new Set(c.observacoes)].join(" · ");
+  $("#cli-linha-obs").hidden = !obs;
+  $("#cli-obs").textContent = obs;
+
+  $("#cli-historico").innerHTML = c.itens
+    .sort((a, b) => b.inicio - a.inicio)
+    .slice(0, 20)
+    .map(cartaoHTML)
+    .join("");
+
+  abrir("#folha-cliente");
+}
+
+// ---------------------------------------------------------------------
+// Ajustes: horario de funcionamento
+// ---------------------------------------------------------------------
+
+const NOMES_DIAS = ["D", "S", "T", "Q", "Q", "S", "S"];
+const NOMES_DIAS_LONGO = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
+
+function preencherAjustes() {
+  const c = estado.config;
+  $("#cfg-abre").value = c.abreEm;
+  $("#cfg-fecha").value = c.fechaEm;
+  $("#cfg-intervalo").value = String(c.intervaloMin);
+  $("#cfg-antecedencia").value = String(c.antecedenciaMin);
+
+  const ativos = c.diasSemana || [0, 1, 2, 3, 4, 5, 6];
+  $("#cfg-dias").innerHTML = NOMES_DIAS.map((letra, i) => `
+    <button type="button" data-dia="${i}" aria-pressed="${ativos.includes(i)}"
+            aria-label="${NOMES_DIAS_LONGO[i]}">${letra}</button>`).join("");
+}
+
+function ligarAjustes() {
+  // alterna os dias da semana
+  $("#cfg-dias").addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-dia]");
+    if (!btn) return;
+    const ligado = btn.getAttribute("aria-pressed") === "true";
+    btn.setAttribute("aria-pressed", String(!ligado));
+    if (navigator.vibrate) navigator.vibrate(8);
+  });
+
+  $("#btn-salvar-cfg").addEventListener("click", async () => {
+    const dias = $$("#cfg-dias [data-dia]")
+      .filter((b) => b.getAttribute("aria-pressed") === "true")
+      .map((b) => Number(b.dataset.dia));
+
+    if (!dias.length) return avisar("Escolha ao menos um dia", "ruim");
+
+    const abre = $("#cfg-abre").value;
+    const fecha = $("#cfg-fecha").value;
+    if (!abre || !fecha || fecha <= abre) {
+      return avisar("O horário de fechar deve ser depois do de abrir", "ruim");
+    }
+
+    const botao = $("#btn-salvar-cfg");
+    botao.disabled = true;
+    botao.textContent = "Salvando...";
+
+    try {
+      await dados.salvarConfig({
+        abreEm: abre,
+        fechaEm: fecha,
+        intervaloMin: Number($("#cfg-intervalo").value),
+        antecedenciaMin: Number($("#cfg-antecedencia").value),
+        diasSemana: dias,
+        diasMaxFuturo: estado.config.diasMaxFuturo || 21
+      });
+      avisar("Horários salvos", "bom");
+    } catch {
+      avisar("Não foi possível salvar", "ruim");
+    } finally {
+      botao.disabled = false;
+      botao.textContent = "Salvar horários";
+    }
+  });
+}
+
+// ---------------------------------------------------------------------
+// Ajustes: servicos
+// ---------------------------------------------------------------------
+
+function desenharListaServicos() {
+  const alvo = $("#lista-servicos");
+  if (!alvo) return;
+
+  alvo.innerHTML = estado.servicos.length
+    ? estado.servicos.map((s, i) => `
+        <button class="servico-item" data-servico="${i}">
+          <span class="servico-item__nome">${escapar(s.nome)}</span>
+          <span class="servico-item__preco">${s.precoCentavos ? emReais(s.precoCentavos) : "sem preço"}</span>
+          <span class="servico-item__meta">${s.duracaoMin} min${s.descricao ? " · " + escapar(s.descricao.slice(0, 48)) : ""}</span>
+        </button>`).join("")
+    : vazioHTML("Nenhum serviço", "Toque em Adicionar para criar o primeiro.");
+}
+
+let servicoEmEdicao = null;
+
+function precoDoCampo() {
+  return paraCentavos($("#srv-preco").value);
+}
+
+function abrirServico(servico = null) {
+  servicoEmEdicao = servico;
+  $("#titulo-servico").textContent = servico ? "Editar serviço" : "Novo serviço";
+  $("#srv-erro").hidden = true;
+  $("#btn-excluir-srv").hidden = !servico;
+
+  $("#srv-nome").value = servico?.nome || "";
+  $("#srv-desc").value = servico?.descricao || "";
+  $("#srv-duracao").value = String(servico?.duracaoMin || 60);
+  // valor limpo, so numeros: evita reconverter texto ja formatado
+  const c = servico?.precoCentavos || 0;
+  $("#srv-preco").value = c ? (c / 100).toFixed(2).replace(".", ",") : "";
+  $("#srv-preco-previa").textContent = c ? emReais(c) : "";
+
+  abrir("#folha-servico");
+  if (!servico) setTimeout(() => $("#srv-nome").focus(), 320);
+}
+
+function ligarServicos() {
+  $("#btn-novo-servico").addEventListener("click", () => abrirServico());
+
+  $("#lista-servicos").addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-servico]");
+    if (!btn) return;
+    abrirServico(estado.servicos[Number(btn.dataset.servico)]);
+  });
+
+  // Sem formatacao automatica no campo: o texto digitado e a unica
+  // fonte de verdade, convertido uma unica vez no submit. Formatar
+  // durante a edicao criava conversao dupla (180,00 virava 18.000).
+  $("#srv-preco").addEventListener("blur", (e) => {
+    const c = paraCentavos(e.target.value);
+    $("#srv-preco-previa").textContent = c ? emReais(c) : "";
+  });
+
+  $("#form-servico").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const erro = $("#srv-erro");
+    const botao = $("#btn-salvar-srv");
+    erro.hidden = true;
+
+    const nome = $("#srv-nome").value.trim();
+    if (nome.length < 2) {
+      erro.textContent = "Dê um nome ao serviço.";
+      erro.hidden = false;
+      return;
+    }
+
+    botao.disabled = true;
+    botao.textContent = "Salvando...";
+
+    try {
+      await dados.salvarServico({
+        id: servicoEmEdicao?.id,
+        nome,
+        descricao: $("#srv-desc").value,
+        duracaoMin: Number($("#srv-duracao").value),
+        precoCentavos: precoDoCampo(),
+        ordem: servicoEmEdicao?.ordem ?? estado.servicos.length + 1
+      });
+      fechar("#folha-servico");
+      avisar(servicoEmEdicao ? "Serviço atualizado" : "Serviço criado", "bom");
+    } catch {
+      erro.textContent = "Não foi possível salvar. Tente de novo.";
+      erro.hidden = false;
+    } finally {
+      botao.disabled = false;
+      botao.textContent = "Salvar";
+    }
+  });
+
+  $("#btn-excluir-srv").addEventListener("click", () => {
+    if (!servicoEmEdicao?.id) return;
+    const alvo = servicoEmEdicao;
+    fechar("#folha-servico");
+    pedirConfirmacao(
+      `Excluir ${alvo.nome}?`,
+      "O serviço deixa de aparecer no site. Os atendimentos já marcados continuam na agenda.",
+      async () => {
+        try {
+          await dados.removerServico(alvo.id);
+          avisar("Serviço excluído", "bom");
+        } catch {
+          avisar("Não foi possível excluir", "ruim");
+        }
+      }
+    );
   });
 }
 
@@ -671,6 +1124,9 @@ function ligarNavegacao() {
 
   // abrir ficha ao tocar em qualquer cartao
   document.addEventListener("click", (e) => {
+    const cliente = e.target.closest("[data-cliente]");
+    if (cliente) return abrirCliente(cliente.dataset.cliente);
+
     const cartao = e.target.closest(".cartao");
     if (cartao) return abrirDetalhe(cartao.dataset.id);
 
@@ -742,8 +1198,15 @@ function acoesPara(a) {
   const b = (classe, acao, texto) =>
     `<button class="btn ${classe}" data-acao="${acao}">${texto}</button>`;
 
+  // lembrete: so faz sentido para atendimento futuro com contato
+  const futuro = a.inicio > new Date();
+  const lembrete = (futuro && a.clienteContato && a.status !== "cancelado")
+    ? b("btn--fantasma", "lembrar", a.lembreteEnviadoEm ? "Lembrete já enviado" : "Enviar lembrete")
+    : "";
+
   if (a.status === "pendente")
     return b("btn--principal", "confirmar", "Confirmar atendimento")
+         + lembrete
          + `<div class="acoes acoes--dupla">
               ${b("btn--fantasma", "remarcar", "Remarcar")}
               ${b("btn--neutro", "cancelar", "Cancelar")}
@@ -751,6 +1214,7 @@ function acoesPara(a) {
 
   if (a.status === "confirmado")
     return b("btn--principal", "concluir", "Marcar como concluído")
+         + lembrete
          + `<div class="acoes acoes--dupla">
               ${b("btn--fantasma", "remarcar", "Remarcar")}
               ${b("btn--neutro", "cancelar", "Cancelar")}
@@ -773,6 +1237,36 @@ document.addEventListener("click", async (e) => {
   if (acao === "remarcar") {
     fechar("#folha-detalhe");
     return abrirNovo(a);
+  }
+
+  // Lembrete: monta a mensagem e abre o app de conversa.
+  // O envio e manual porque um site estatico nao roda tarefas sozinho.
+  if (acao === "lembrar") {
+    const quando = a.inicio.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" });
+    const texto =
+      `Olá, ${a.clienteNome.split(" ")[0]}! Passando para lembrar do seu horário:\n\n` +
+      `${a.servicoNome}\n${quando}, às ${hhmm(a.inicio)}\n` +
+      `Rua Lagoa Santa, 11 - Carlos Prates\n\n` +
+      `Qualquer imprevisto, é só avisar. Até lá!`;
+
+    const so = (a.clienteContato || "").replace(/\D/g, "");
+    const ehTelefone = so.length >= 10;
+
+    if (ehTelefone) {
+      const numero = so.length <= 11 ? "55" + so : so;
+      window.open(`https://wa.me/${numero}?text=${encodeURIComponent(texto)}`, "_blank", "noopener");
+    } else {
+      try {
+        await navigator.clipboard.writeText(texto);
+        avisar("Mensagem copiada", "bom");
+      } catch {
+        avisar("Não foi possível copiar", "ruim");
+      }
+    }
+
+    try { await dados.marcarLembreteEnviado(a.id); } catch { /* nao bloqueia o envio */ }
+    fechar("#folha-detalhe");
+    return;
   }
 
   if (acao === "cancelar" || acao === "excluir") {
@@ -939,6 +1433,7 @@ function ligarFormularios() {
           clienteNome: nome,
           servicoNome: servico.nome,
           duracaoMin: servico.duracaoMin,
+          precoCentavos: servico.precoCentavos || 0,
           inicio,
           observacoes: $("#novo-obs").value,
           status: "confirmado",

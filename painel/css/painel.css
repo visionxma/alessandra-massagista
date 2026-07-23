@@ -288,18 +288,23 @@ button { background: none; border: 0; cursor: pointer; }
 }
 
 .faixa-bloqueio {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+  display: grid;
+  gap: 0.5rem;
   margin-bottom: 0.85rem;
   padding: 0.75rem 1rem;
   background: var(--verm-fundo);
   border: 1px solid rgba(217, 115, 107, 0.3);
   border-radius: var(--r-m);
-  font-size: 0.86rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: var(--vermelho);
+}
+
+.faixa-bloqueio__linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
 /* dia bloqueado no calendario */
@@ -309,6 +314,192 @@ button { background: none; border: 0; cursor: pointer; }
   text-decoration: line-through;
   text-decoration-color: var(--vermelho);
   text-decoration-thickness: 1.5px;
+}
+
+.previa {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ouro);
+  min-height: 1.1em;
+}
+
+.dica-lembrete {
+  margin-bottom: 0.7rem;
+  padding: 0.65rem 0.9rem;
+  background: var(--ambar-fundo);
+  border-radius: var(--r-p);
+  font-size: 0.82rem;
+  color: var(--ambar);
+}
+
+/* ---------- faturamento ---------- */
+
+.periodo { display: flex; gap: 0.45rem; margin-bottom: 1rem; }
+.periodo .chip { flex: 1; text-align: center; }
+
+.caixa-total {
+  padding: 1.4rem 1.2rem;
+  margin-bottom: 0.9rem;
+  background: linear-gradient(150deg, rgba(205, 162, 100, 0.18), var(--elevado) 78%);
+  border: 1px solid rgba(205, 162, 100, 0.28);
+  border-radius: var(--r-g);
+  text-align: center;
+}
+
+.caixa-total__rot {
+  display: block;
+  font-size: 0.68rem; font-weight: 600;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ouro);
+}
+
+.caixa-total__valor {
+  display: block;
+  margin: 0.35rem 0 0.2rem;
+  font-family: Georgia, serif;
+  font-size: clamp(2rem, 9vw, 2.7rem);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.caixa-total__sub { display: block; font-size: 0.83rem; color: var(--texto-2); }
+
+.linha-servico {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.3rem 1rem;
+  padding: 0.85rem 1rem;
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-m);
+}
+
+.linha-servico__nome { font-weight: 600; font-size: 0.93rem; }
+.linha-servico__valor {
+  font-family: Georgia, serif; font-size: 1.02rem;
+  color: var(--ouro); font-variant-numeric: tabular-nums;
+}
+.linha-servico__qtd { grid-column: 1 / -1; font-size: 0.78rem; color: var(--texto-3); }
+
+.nota-rodape {
+  margin-top: 1rem;
+  font-size: 0.78rem;
+  color: var(--texto-3);
+  text-align: center;
+}
+
+/* ---------- ajustes ---------- */
+
+.cartao-form {
+  padding: 1.2rem 1.1rem 1.3rem;
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-m);
+  margin-bottom: 0.5rem;
+}
+
+.cartao-form .campo:last-of-type { margin-bottom: 1.2rem; }
+
+.campo select {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  background: var(--elevado);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-m);
+  font-size: 16px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b8ab9a' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.9rem center;
+  background-size: 18px;
+  padding-right: 2.6rem;
+}
+
+.campo select:focus { outline: none; border-color: var(--ouro); }
+
+.semana { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.3rem; }
+
+.semana button {
+  aspect-ratio: 1;
+  display: grid; place-items: center;
+  border-radius: var(--r-p);
+  border: 1px solid var(--linha);
+  background: var(--elevado);
+  font-size: 0.78rem; font-weight: 600;
+  color: var(--texto-3);
+  transition: background-color .2s, color .2s, border-color .2s;
+}
+
+.semana button[aria-pressed="true"] {
+  background: var(--ouro); border-color: var(--ouro); color: #1a1410;
+}
+
+/* lista de servicos editaveis */
+.servico-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.3rem 1rem;
+  width: 100%;
+  padding: 0.9rem 1rem;
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-m);
+  text-align: left;
+  transition: border-color .2s, transform .15s var(--mola);
+}
+
+.servico-item:active { transform: scale(0.985); border-color: var(--ouro); }
+
+.servico-item__nome { font-weight: 600; font-size: 0.95rem; }
+.servico-item__preco {
+  font-family: Georgia, serif; font-size: 1rem;
+  color: var(--ouro); font-variant-numeric: tabular-nums;
+}
+.servico-item__meta { grid-column: 1 / -1; font-size: 0.79rem; color: var(--texto-3); }
+
+/* ---------- ficha do cliente ---------- */
+
+.cliente-cartao {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.9rem;
+  width: 100%;
+  padding: 0.9rem 1rem;
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-m);
+  text-align: left;
+  transition: border-color .2s, transform .15s var(--mola);
+}
+
+.cliente-cartao:active { transform: scale(0.985); border-color: var(--ouro); }
+
+.avatar {
+  display: grid; place-items: center;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: var(--ouro-fundo);
+  color: var(--ouro);
+  font-family: Georgia, serif;
+  font-size: 1.05rem;
+  flex: none;
+}
+
+.cliente-cartao__nome { font-weight: 600; font-size: 0.95rem; }
+.cliente-cartao__meta { font-size: 0.79rem; color: var(--texto-2); }
+
+.selo-sessoes {
+  flex: none;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: var(--elevado);
+  font-size: 0.72rem; font-weight: 700;
+  color: var(--texto-2);
+  font-variant-numeric: tabular-nums;
 }
 
 /* separador de data na lista de proximos */
@@ -571,7 +762,7 @@ button { background: none; border: 0; cursor: pointer; }
 
 .barra {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
-  display: grid; grid-template-columns: repeat(3, 1fr);
+  display: grid; grid-template-columns: repeat(5, 1fr);
   padding-bottom: var(--seguro-baixo);
   background: rgba(18, 16, 16, 0.94);
   backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
@@ -579,15 +770,15 @@ button { background: none; border: 0; cursor: pointer; }
 }
 
 .barra__item {
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
   height: var(--barra-h);
   justify-content: center;
   color: var(--texto-3);
-  font-size: 0.66rem; font-weight: 600;
+  font-size: 0.6rem; font-weight: 600;
   transition: color .2s;
 }
 
-.barra__item svg { width: 22px; height: 22px; transition: transform .2s var(--mola); }
+.barra__item svg { width: 20px; height: 20px; transition: transform .2s var(--mola); }
 .barra__item--ativo { color: var(--ouro); }
 .barra__item--ativo svg { transform: translateY(-1px); }
 
