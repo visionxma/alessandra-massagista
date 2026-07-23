@@ -447,6 +447,20 @@ export async function removerServico(id) {
 // Lembrete: marca que o cliente ja foi avisado
 // ---------------------------------------------------------------------
 
+// Congela o preco no agendamento (aplicado pela profissional ao
+// concluir). So autenticado consegue, pela regra do Firestore.
+export async function definirPreco(id, precoCentavos) {
+  if (MODO_DEMO) {
+    const lista = demo.ler().map((a) =>
+      a.id === id ? { ...a, precoCentavos } : a);
+    demo.gravar(lista);
+    return;
+  }
+  await fb.updateDoc(fb.doc(db, "agendamentos", id), {
+    precoCentavos: Number(precoCentavos) || 0
+  });
+}
+
 export async function marcarLembreteEnviado(id) {
   if (MODO_DEMO) return demo.marcarLembrete(id);
   await fb.updateDoc(fb.doc(db, "agendamentos", id), {

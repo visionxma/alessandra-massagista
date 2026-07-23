@@ -364,7 +364,9 @@ function ligarFormulario() {
         lembreteMin,
         servicoNome: estado.servico.nome,
         duracaoMin: estado.servico.duracaoMin,
-        precoCentavos: estado.servico.precoCentavos || 0,
+        // o site NUNCA define preco: evita que alguem forje o valor
+        // do faturamento. O painel aplica o preco da tabela ao concluir.
+        precoCentavos: 0,
         inicio: estado.hora,
         observacoes: $("#obs").value.trim(),
         status: "pendente",

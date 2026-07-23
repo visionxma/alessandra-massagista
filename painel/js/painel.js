@@ -502,7 +502,7 @@ function avisarLembretesPendentes() {
       <div class="lembrete-linha">
         <span>
           <span class="lembrete-linha__nome">${escapar(a.clienteNome)}</span>
-          <span class="lembrete-linha__quando">${a.servicoNome} · ${quando}</span>
+          <span class="lembrete-linha__quando">${escapar(a.servicoNome)} · ${quando}</span>
         </span>
         <button class="btn-enviar" data-lembrar="${a.id}">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12.04 2c-5.46 0-9.9 4.44-9.9 9.9 0 1.75.46 3.45 1.32 4.95L2 22l5.3-1.39a9.87 9.87 0 0 0 4.74 1.21c5.46 0 9.9-4.44 9.9-9.9 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2m0 1.67c2.2 0 4.26.86 5.82 2.42a8.2 8.2 0 0 1 2.41 5.83c0 4.54-3.7 8.23-8.24 8.23a8.2 8.2 0 0 1-4.19-1.15l-.3-.17-3.12.82.83-3.04-.2-.32a8.2 8.2 0 0 1-1.26-4.38c.01-4.54 3.7-8.24 8.25-8.24m-3.53 4.4c-.16 0-.43.06-.66.31-.22.25-.87.85-.87 2.07 0 1.22.89 2.4 1 2.56.13.17 1.76 2.67 4.25 3.73.59.27 1.05.42 1.41.53.59.19 1.13.16 1.56.1.48-.07 1.46-.6 1.67-1.18.2-.58.2-1.07.14-1.18-.06-.1-.22-.16-.47-.28-.25-.13-1.46-.72-1.69-.8-.22-.09-.39-.13-.55.12-.17.25-.64.8-.78.96-.14.17-.29.19-.53.06-.25-.12-1.05-.38-1.99-1.22-.74-.66-1.23-1.47-1.38-1.72-.14-.24-.01-.38.11-.5.11-.11.25-.29.37-.43.13-.15.17-.25.25-.42.08-.17.04-.31-.02-.43-.06-.13-.55-1.35-.77-1.84-.2-.48-.4-.42-.55-.43z"/></svg>
@@ -1367,6 +1367,15 @@ document.addEventListener("click", async (e) => {
 
   try {
     btn.disabled = true;
+
+    // Ao concluir um atendimento que veio do site (preco 0), aplica o
+    // preco atual da tabela. O valor fica congelado no historico, e o
+    // cliente nunca teve como definir esse numero.
+    if (novoStatus === "concluido" && !a.precoCentavos) {
+      const preco = precoDoServico(a.servicoNome);
+      if (preco) await dados.definirPreco(a.id, preco);
+    }
+
     await dados.mudarStatus(a.id, novoStatus);
     fechar("#folha-detalhe");
     avisar(

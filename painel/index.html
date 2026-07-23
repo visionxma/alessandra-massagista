@@ -3,6 +3,31 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+
+  <!-- ================= SEGURANCA ================= -->
+  <!-- CSP: define de onde scripts, estilos e conexoes podem vir.
+       Barra XSS, injecao de script externo e exfiltracao de dados.
+       Os dominios liberados sao exatamente os do Firebase. -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'none';
+    script-src 'self' https://www.gstatic.com https://www.googleapis.com;
+    connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://firebaseinstallations.googleapis.com https://firebase.googleapis.com;
+    style-src 'self' 'unsafe-inline';
+    img-src 'self' data:;
+    font-src 'self';
+    manifest-src 'self';
+    worker-src 'self';
+    frame-src https://alessandra-massagista.firebaseapp.com;
+    base-uri 'none';
+    form-action 'none';
+    frame-ancestors 'none';
+    upgrade-insecure-requests;
+  " />
+  <!-- anti-clickjacking (reforca frame-ancestors para navegadores antigos) -->
+  <meta http-equiv="X-Frame-Options" content="DENY" />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+
   <title>Agenda | Alessandra</title>
   <meta name="description" content="Painel de agendamentos" />
   <meta name="robots" content="noindex, nofollow" />

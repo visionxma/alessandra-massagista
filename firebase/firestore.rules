@@ -3,116 +3,198 @@ rules_version = '2';
 // =====================================================================
 // Regras de seguranca - Agenda Alessandra
 //
-// Principio: o visitante do site pode PEDIR um horario, mas nunca
-// enxergar dados de outros clientes. So a Alessandra (autenticada)
-// le e gerencia a agenda.
+// Modelo de ameaca:
+//   * Visitante anonimo (site): pode CRIAR um agendamento e o marcador
+//     de horario, e LER apenas dados nao sensiveis (horarios ocupados,
+//     servicos, config, datas bloqueadas). Nunca le dados de clientes.
+//   * Profissional autenticada: acesso total.
 //
-// Cole em: Firebase Console > Firestore Database > Regras > Publicar
+// Principios aplicados:
+//   - Deny by default (match final nega tudo)
+//   - Whitelist de campos em toda escrita (anti mass-assignment)
+//   - Validacao de tipo, tamanho e formato de cada campo (defesa na fonte)
+//   - Least privilege: cada colecao expoe o minimo necessario
+//   - Imutabilidade da trilha de auditoria
+//
+// Referencias: OWASP ASVS V5 (validacao), Firebase Security Rules
+// best practices, CWE-915 (mass assignment), CWE-20 (input validation).
 // =====================================================================
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // -------- helpers --------
+
     function autenticada() {
       return request.auth != null;
     }
 
-    function campos() {
+    function dados() {
       return request.resource.data;
     }
 
+    // texto seguro: string, dentro do tamanho e SEM caracteres usados
+    // em injecao de HTML/script. Barra o payload antes de entrar no banco.
+    function textoSeguro(campo, minimo, maximo) {
+      return campo is string
+        && campo.size() >= minimo
+        && campo.size() <= maximo
+        && !campo.matches('.*[<>].*')          // sem tags
+        && !campo.matches('(?i).*(javascript:|data:|vbscript:|on\\w+\\s*=).*');
+    }
+
+    // texto opcional: ausente, ou presente e seguro
+    function textoOpcional(nome, maximo) {
+      return !(nome in dados())
+        || textoSeguro(dados()[nome], 0, maximo);
+    }
+
+    // telefone: exatamente 10 ou 11 digitos, com a mascara (parenteses,
+    // espaco, hifen) chega entre 14 e 16 chars e so contem esse conjunto
+    function telefoneValido(campo) {
+      return campo is string
+        && campo.size() >= 10
+        && campo.size() <= 16
+        && campo.matches('[0-9()\\-\\s]+')
+        && campo.matches('.*[0-9].*');
+    }
+
+    function inteiroEntre(v, minimo, maximo) {
+      return v is int && v >= minimo && v <= maximo;
+    }
+
     // -----------------------------------------------------------------
-    // servicos: qualquer um le (o site monta a lista), so a dona altera
+    // servicos: leitura publica (o site e a home montam a lista).
+    // Escrita so autenticada e com campos validados.
     // -----------------------------------------------------------------
     match /servicos/{id} {
       allow read: if true;
-      allow write: if autenticada();
+
+      allow write: if autenticada()
+        && dados().keys().hasOnly(
+             ['nome', 'descricao', 'duracaoMin', 'precoCentavos', 'ordem', 'ativo'])
+        && textoSeguro(dados().nome, 2, 60)
+        && textoOpcional('descricao', 200)
+        && inteiroEntre(dados().duracaoMin, 5, 600)
+        && inteiroEntre(dados().precoCentavos, 0, 100000000)   // teto R$ 1M
+        && inteiroEntre(dados().ordem, 0, 999)
+        && dados().ativo is bool;
     }
 
     // -----------------------------------------------------------------
-    // configuracao: horario de funcionamento, lido pelo site
+    // configuracao: horario de funcionamento, lido pelo site.
     // -----------------------------------------------------------------
     match /configuracao/{id} {
       allow read: if true;
-      allow write: if autenticada();
+
+      allow write: if autenticada()
+        && dados().keys().hasOnly(
+             ['abreEm', 'fechaEm', 'intervaloMin', 'antecedenciaMin',
+              'diasSemana', 'diasMaxFuturo', 'atualizadoEm'])
+        && dados().abreEm.matches('[0-2][0-9]:[0-5][0-9]')
+        && dados().fechaEm.matches('[0-2][0-9]:[0-5][0-9]')
+        && inteiroEntre(dados().intervaloMin, 5, 240)
+        && inteiroEntre(dados().antecedenciaMin, 0, 43200)
+        && inteiroEntre(dados().diasMaxFuturo, 1, 365)
+        && dados().diasSemana is list
+        && dados().diasSemana.size() <= 7;
     }
 
     // -----------------------------------------------------------------
-    // agendamentos
-    //   - visitante: SO cria, e apenas com status pendente e origem site.
-    //     Nao pode ler, editar nem apagar nada.
-    //   - Alessandra: acesso total.
+    // agendamentos: contem dados pessoais.
+    //   - leitura/edicao/exclusao: SO a profissional.
+    //   - criacao pelo site: whitelist estrita de campos e validacao
+    //     de cada um. O visitante NAO pode definir status diferente de
+    //     'pendente', origem diferente de 'site', nem injetar preco.
     // -----------------------------------------------------------------
     match /agendamentos/{id} {
-      // Dados pessoais: SO a profissional autenticada le, edita e apaga.
-      // O visitante nunca acessa esta colecao; para saber quais horarios
-      // estao tomados ele usa a colecao anonima /ocupados.
       allow read, update, delete: if autenticada();
 
-      allow create: if autenticada() || (
-           campos().status == 'pendente'
-        && campos().origem == 'site'
-        && campos().clienteNome is string
-        && campos().clienteNome.size() >= 2
-        && campos().clienteNome.size() <= 80
-        && campos().servicoNome is string
-        // telefone obrigatorio: 10 ou 11 digitos, com a mascara vira 14-16 chars
-        && campos().clienteContato is string
-        && campos().clienteContato.size() >= 10
-        && campos().clienteContato.size() <= 20
-        && campos().inicio is timestamp
-        && campos().fim is timestamp
-        && campos().inicio < campos().fim
-        // impede agendar no passado
-        && campos().inicio > request.time
-        // teto de 90 dias no futuro, evita lixo na agenda
-        && campos().inicio < request.time + duration.value(90, 'd')
-        && (!('observacoes' in campos()) || campos().observacoes.size() <= 500)
-      );
+      // criacao pelo painel: profissional confiavel, validacao leve
+      allow create: if autenticada()
+        && textoSeguro(dados().clienteNome, 1, 80)
+        && textoSeguro(dados().servicoNome, 1, 80);
+
+      // criacao pelo site: regime estrito
+      allow create: if !autenticada()
+        && dados().keys().hasOnly(
+             ['clienteNome', 'clienteContato', 'servicoNome', 'duracaoMin',
+              'inicio', 'fim', 'status', 'observacoes', 'origem',
+              'precoCentavos', 'lembreteMin', 'criadoEm'])
+        && dados().status == 'pendente'
+        && dados().origem == 'site'
+        && textoSeguro(dados().clienteNome, 2, 80)
+        && telefoneValido(dados().clienteContato)
+        && textoSeguro(dados().servicoNome, 1, 80)
+        && inteiroEntre(dados().duracaoMin, 5, 600)
+        && dados().inicio is timestamp
+        && dados().fim is timestamp
+        && dados().inicio < dados().fim
+        && dados().inicio > request.time
+        && dados().inicio < request.time + duration.value(90, 'd')
+        && textoOpcional('observacoes', 500)
+        // o site nunca define preco (evita falsear faturamento);
+        // o painel congela o preco depois, no atendimento
+        && (!('precoCentavos' in dados()) || dados().precoCentavos == 0)
+        && (!('lembreteMin' in dados()) || inteiroEntre(dados().lembreteMin, 0, 10080));
     }
 
     // -----------------------------------------------------------------
-    // ocupados: espelho publico e ANONIMO dos horarios tomados.
-    //
-    // Guarda exclusivamente inicio e fim. Nenhum nome, telefone ou
-    // observacao chega aqui, entao a leitura publica nao expoe dado
-    // pessoal nenhum. E o que a pagina de agendamento consulta para
-    // montar a grade e o que a transacao usa para impedir overbooking.
+    // ocupados: espelho publico e ANONIMO (so inicio e fim).
     // -----------------------------------------------------------------
     match /ocupados/{id} {
       allow read: if true;
 
-      // o visitante so pode criar o marcador junto do seu agendamento,
-      // e apenas com os dois campos de horario
       allow create: if autenticada() || (
-           request.resource.data.keys().hasOnly(['inicio', 'fim'])
-        && request.resource.data.inicio is timestamp
-        && request.resource.data.fim is timestamp
-        && request.resource.data.inicio < request.resource.data.fim
-        && request.resource.data.inicio > request.time
+           dados().keys().hasOnly(['inicio', 'fim'])
+        && dados().inicio is timestamp
+        && dados().fim is timestamp
+        && dados().inicio < dados().fim
+        && dados().inicio > request.time
+        && dados().inicio < request.time + duration.value(90, 'd')
       );
 
-      // alterar ou liberar horario e coisa da profissional
       allow update, delete: if autenticada();
     }
 
     // -----------------------------------------------------------------
-    // bloqueios: folgas e compromissos.
-    //
-    // A pagina publica precisa saber QUANDO nao ha atendimento, mas o
-    // MOTIVO e assunto particular da profissional. Por isso o motivo
-    // vive em /bloqueiosPrivados, de leitura restrita.
+    // bloqueios: quando nao ha atendimento (publico).
+    // O motivo fica em bloqueiosPrivados (restrito).
     // -----------------------------------------------------------------
     match /bloqueios/{id} {
       allow read: if true;
-      allow write: if autenticada();
+
+      allow write: if autenticada()
+        && dados().keys().hasOnly(['inicio', 'fim', 'diaTodo', 'criadoEm'])
+        && dados().inicio is timestamp
+        && dados().fim is timestamp
+        && dados().inicio <= dados().fim
+        && dados().diaTodo is bool;
     }
 
     match /bloqueiosPrivados/{id} {
-      allow read, write: if autenticada();
+      allow read: if autenticada();
+      allow write: if autenticada()
+        && dados().keys().hasOnly(['motivo'])
+        && textoSeguro(dados().motivo, 0, 120);
     }
 
-    // Nega tudo que nao foi declarado acima
+    // -----------------------------------------------------------------
+    // auditoria: trilha de eventos de seguranca.
+    // Qualquer sessao autenticada acrescenta um evento; ninguem edita
+    // nem apaga (imutabilidade). Leitura restrita.
+    // -----------------------------------------------------------------
+    match /auditoria/{id} {
+      allow read: if autenticada();
+      allow create: if autenticada()
+        && dados().keys().hasOnly(['evento', 'detalhe', 'em', 'uid'])
+        && textoSeguro(dados().evento, 1, 40)
+        && textoOpcional('detalhe', 200)
+        && dados().uid == request.auth.uid;
+      allow update, delete: if false;   // trilha imutavel
+    }
+
+    // Deny by default
     match /{document=**} {
       allow read, write: if false;
     }

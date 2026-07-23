@@ -1,0 +1,12 @@
+{
+  "name": "testes-seguranca",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node pentest-regras.mjs"
+  },
+  "dependencies": {
+    "@firebase/rules-unit-testing": "^5.0.1",
+    "firebase": "^12.16.0"
+  }
+}
