@@ -2,16 +2,16 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
-    <loc>https://visionxma.github.io/alessandra-massagista/</loc>
-    <lastmod>2026-07-22</lastmod>
+    <loc>https://alessandramassagista.com/</loc>
+    <lastmod>2026-07-23</lastmod>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
     <image:image>
-      <image:loc>https://visionxma.github.io/alessandra-massagista/assets/img/alessandra-retrato.jpeg</image:loc>
+      <image:loc>https://alessandramassagista.com/assets/img/alessandra-retrato.jpeg</image:loc>
       <image:title>Alessandra, massagista em Belo Horizonte</image:title>
     </image:image>
     <image:image>
-      <image:loc>https://visionxma.github.io/alessandra-massagista/assets/img/alessandra-espaco.png</image:loc>
+      <image:loc>https://alessandramassagista.com/assets/img/alessandra-espaco.png</image:loc>
       <image:title>Espaço de massagem no bairro Carlos Prates</image:title>
     </image:image>
   </url>
