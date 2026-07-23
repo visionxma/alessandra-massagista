@@ -20,13 +20,12 @@
     frame-src https://alessandra-massagista.firebaseapp.com;
     base-uri 'none';
     form-action 'none';
-    frame-ancestors 'none';
     upgrade-insecure-requests;
   " />
-  <!-- anti-clickjacking (reforca frame-ancestors para navegadores antigos) -->
-  <meta http-equiv="X-Frame-Options" content="DENY" />
   <meta http-equiv="X-Content-Type-Options" content="nosniff" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <!-- anti-clickjacking (arquivo externo p/ respeitar o CSP script-src 'self') -->
+  <script src="js/guard.js"></script>
 
   <title>Agenda | Alessandra</title>
   <meta name="description" content="Painel de agendamentos" />
