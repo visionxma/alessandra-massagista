@@ -147,11 +147,36 @@ a { color: inherit; text-decoration: none; }
 /* revelacao no scroll */
 .reveal {
   opacity: 0;
-  transform: translateY(28px);
-  transition: opacity 0.9s var(--ease) var(--d, 0ms), transform 0.9s var(--ease) var(--d, 0ms);
+  transform: translateY(30px);
+  transition: opacity 0.85s var(--ease) var(--d, 0ms), transform 0.85s var(--ease) var(--d, 0ms);
+  will-change: opacity, transform;
 }
 
-.reveal.is-visible { opacity: 1; transform: none; }
+.reveal.is-visible { opacity: 1; transform: none; will-change: auto; }
+
+/* barrinha lateral dos itens de lista "desenha" de cima para baixo
+   quando o item aparece — as listas usam border-left; troco por um
+   pseudo-elemento animavel. So onde ha movimento permitido. */
+@media (prefers-reduced-motion: no-preference) {
+  .spa__lista li,
+  .tantra__lista li { border-left-color: transparent; position: relative; }
+
+  .spa__lista li::before,
+  .tantra__lista li::before {
+    content: "";
+    position: absolute;
+    left: -2px; top: 0; bottom: 0;
+    width: 2px;
+    transform: scaleY(0);
+    transform-origin: top;
+    transition: transform 0.7s var(--ease) var(--d, 0ms);
+  }
+  .spa__lista li::before { background: var(--gold-vivo); }
+  .tantra__lista li::before { background: #7d8fc8; }
+
+  .spa__lista li.is-visible::before,
+  .tantra__lista li.is-visible::before { transform: scaleY(1); }
+}
 
 /* ---------- navegacao ---------- */
 
@@ -1239,12 +1264,31 @@ a { color: inherit; text-decoration: none; }
       animation-range: entry 0% exit 100%;
     }
     .cta__bg img { height: 116%; }
+
+    /* zoom lento nas fotos de destaque: ganham "vida" ao atravessar a
+       tela, escalando de leve conforme se rola. Prende o olhar sem
+       distrair. Focado no mobile/tablet (onde nao ha hover); no desktop
+       preservamos o zoom-no-hover que ja existe nessas fotos. */
+    @media (max-width: 1024px) {
+      .spa__foto img,
+      .tantra__foto img,
+      .etapa__foto img {
+        animation: zoom-scroll linear both;
+        animation-timeline: view();
+        animation-range: entry 5% exit 95%;
+      }
+    }
   }
 }
 
 @keyframes drift {
   from { transform: translateY(-3%); }
   to { transform: translateY(3%); }
+}
+
+@keyframes zoom-scroll {
+  from { transform: scale(1.005); }
+  to { transform: scale(1.06); }
 }
 
 /* ---------- responsivo ---------- */

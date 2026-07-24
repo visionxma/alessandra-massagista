@@ -36,7 +36,26 @@ mobileMenu.querySelectorAll("a").forEach((link) =>
   })
 );
 
-/* ---------- revelacao no scroll ---------- */
+/* ---------- revelacao no scroll, em cascata ----------
+   Cada elemento .reveal surge com um pequeno atraso em relacao ao
+   anterior da MESMA secao. Isso cria um ritmo (titulo, texto, itens
+   um apos o outro) que conduz o olhar e deixa a rolagem gostosa,
+   sem que nada apareça de uma vez so. O atraso e limitado para os
+   ultimos itens de listas longas nao demorarem demais. */
+
+const semMovimento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* pre-calcula o atraso de cada .reveal conforme a ordem dentro do seu
+   bloco pai (secao). Guarda em --d, que o CSS ja usa na transicao. */
+if (!semMovimento) {
+  document.querySelectorAll("section, footer").forEach((bloco) => {
+    const itens = bloco.querySelectorAll(".reveal");
+    itens.forEach((el, i) => {
+      const atraso = Math.min(i * 90, 620); // 90ms entre itens, teto de 620ms
+      el.style.setProperty("--d", atraso + "ms");
+    });
+  });
+}
 
 const revealObserver = new IntersectionObserver(
   (entries) => {
@@ -47,7 +66,7 @@ const revealObserver = new IntersectionObserver(
       }
     });
   },
-  { threshold: 0.18, rootMargin: "0px 0px -40px 0px" }
+  { threshold: 0.14, rootMargin: "0px 0px -40px 0px" }
 );
 
 document.querySelectorAll(".reveal").forEach((el) => revealObserver.observe(el));
