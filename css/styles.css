@@ -678,6 +678,111 @@ a { color: inherit; text-decoration: none; }
   .spa__rodape .btn { flex: 1; justify-content: center; }
 }
 
+/* ---------- sessao tantrica para casais: bloco intimo azul-marinho ---------- */
+
+.tantra {
+  padding: clamp(3.5rem, 7vw, 6.5rem) 1.5rem;
+  /* azul-marinho profundo, ecoando os robes de seda da foto */
+  background:
+    radial-gradient(120% 80% at 80% 0%, rgba(58, 74, 120, 0.28), transparent 60%),
+    linear-gradient(160deg, #12162a, #0c0f1d 70%);
+  scroll-margin-top: 80px;
+}
+
+.tantra__inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;   /* foto vertical menor, texto respira */
+  gap: clamp(2rem, 5vw, 4.5rem);
+  align-items: center;
+}
+
+.tantra__foto {
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 34px 80px rgba(4, 6, 15, 0.6);
+}
+
+.tantra__foto::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid rgba(180, 196, 240, 0.16);
+  pointer-events: none;
+}
+
+.tantra__foto img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 5;        /* retrato, como a foto do casal */
+  object-fit: cover;
+  transition: transform 1.1s var(--ease);
+}
+
+.tantra__foto:hover img { transform: scale(1.04); }
+
+.tantra__texto .eyebrow { color: #b9c6ef; }   /* azul claro suave no lugar do dourado */
+.tantra__texto h2 { color: var(--cream); max-width: 16ch; }
+
+.tantra__intro {
+  margin-top: 1rem;
+  color: #cdd3e6;
+  font-size: 0.99rem;
+  line-height: 1.75;
+  max-width: 48ch;
+}
+
+.tantra__lista {
+  list-style: none;
+  margin: 1.8rem 0;
+  display: grid;
+  gap: 1.1rem;
+}
+
+.tantra__lista li {
+  display: grid;
+  gap: 0.15rem;
+  padding-left: 1.3rem;
+  border-left: 2px solid #7d8fc8;   /* acento azul-acinzentado */
+}
+
+.tantra__lista strong {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--cream);
+}
+
+.tantra__lista span { color: #aeb6cf; font-size: 0.93rem; }
+
+.tantra__rodape {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  flex-wrap: wrap;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(180, 196, 240, 0.16);
+}
+
+.tantra__tempo {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  color: #b9c6ef;
+  padding: 0.4rem 1rem;
+  border: 1px solid rgba(180, 196, 240, 0.2);
+  border-radius: 999px;
+}
+
+@media (max-width: 860px) {
+  .tantra__inner { grid-template-columns: 1fr; gap: 1.8rem; max-width: 480px; }
+  .tantra__rodape .btn { flex: 1; justify-content: center; }
+}
+
 /* ---------- o ritual: narrativa em etapas alternadas ---------- */
 
 .ritual {
