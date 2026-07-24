@@ -820,6 +820,9 @@ a { color: inherit; text-decoration: none; }
 .ritual__head { max-width: 1240px; margin: 0 auto clamp(2.4rem, 5vw, 4rem); }
 .ritual__head h2 { max-width: 22ch; }
 
+/* dica "deslize" — so no mobile, onde as etapas viram carrossel */
+.ritual__dica { display: none; }
+
 .ritual__trilha {
   position: relative;
   max-width: 1080px;
@@ -935,12 +938,73 @@ a { color: inherit; text-decoration: none; }
 }
 
 @media (max-width: 860px) {
-  .etapa { grid-template-columns: 1fr; gap: 1.2rem; }
+  /* no celular as etapas viram um CARROSSEL horizontal de cards:
+     desliza pro lado pra ver cada etapa. Comprime 5 etapas empilhadas
+     (rolagem longa) numa faixa da altura de 1 card so, e fica intuitivo. */
+  .ritual__trilha {
+    display: flex;
+    gap: 1rem;
+    /* estoura a margem lateral da secao para o carrossel encostar nas bordas */
+    margin-left: -1.5rem;
+    margin-right: -1.5rem;
+    padding: 0.5rem 1.5rem 1.2rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;              /* Firefox */
+  }
+  .ritual__trilha::-webkit-scrollbar { display: none; }  /* Chrome/Safari */
+  .ritual__trilha::before { display: none; }   /* remove a linha vertical do desktop */
+
+  .etapa {
+    flex: 0 0 78%;
+    max-width: 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    scroll-snap-align: center;
+    background: var(--branco);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: 0 14px 34px rgba(20, 17, 14, 0.12);
+  }
   .etapa:nth-child(even) .etapa__foto { order: 0; }
+
+  .etapa__foto {
+    border-radius: 0;
+    box-shadow: none;
+  }
   .etapa__foto img { aspect-ratio: 16 / 11; }
-  .etapa__texto { padding: 0; }
+
+  .etapa__texto { padding: 1.1rem 1.2rem 1.4rem; }
+  .etapa__texto h3 { font-size: 1.22rem; }
+  .etapa__texto p { font-size: 0.92rem; }
+
+  .ritual__dica {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-top: 1rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--gold);
+  }
+  .ritual__dica svg { width: 1.15em; height: 1.15em; }
+
   .ritual__fecho { flex-direction: column; align-items: stretch; text-align: center; }
   .ritual__fecho .btn { justify-content: center; }
+}
+
+@media (max-width: 860px) and (prefers-reduced-motion: no-preference) {
+  /* a setinha da dica desliza de leve, convidando ao gesto */
+  .ritual__dica svg { animation: dica-desliza 1.8s ease-in-out infinite; }
+}
+
+@keyframes dica-desliza {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(5px); }
 }
 
 /* ---------- diferenciais: cards empilhados no scroll ---------- */
