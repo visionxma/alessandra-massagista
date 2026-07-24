@@ -1348,6 +1348,15 @@ a { color: inherit; text-decoration: none; }
   .sobre__inner,
   .local__inner { grid-template-columns: 1fr; }
 
+  /* no celular a foto da Alessandra ficava alta demais e empurrava
+     o texto para muito baixo — deixa mais panoramica e limita a altura,
+     mantendo o rosto enquadrado */
+  .sobre__media img {
+    aspect-ratio: 5 / 4;
+    max-height: 62vh;
+    object-position: center 28%;
+  }
+
   /* cards de servico tambem empilham no scroll (grid vira bloco para o
      position:sticky poder atuar em cada card) */
   .servicos__grid {
