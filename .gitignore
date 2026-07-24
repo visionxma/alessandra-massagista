@@ -11,6 +11,11 @@ firestore-debug.log
 # testes
 testes/node_modules/
 testes/package-lock.json
+
+# ferramentas locais de deploy (Wrangler) — nao fazem parte do site
+node_modules/
+package.json
+package-lock.json
 .firebase/
 firestore-debug.log
 firebase-debug.log
