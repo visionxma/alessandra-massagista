@@ -806,6 +806,17 @@ a { color: inherit; text-decoration: none; }
 @media (max-width: 860px) {
   .tantra__inner { grid-template-columns: 1fr; gap: 1.8rem; max-width: 480px; }
   .tantra__rodape .btn { flex: 1; justify-content: center; }
+  /* a foto do casal era retrato (4/5) e ficava muito alta no celular.
+     Uso altura fixa (nao aspect-ratio) para a LARGURA mandar (100% do
+     container) e a altura ficar contida — assim nunca transborda. */
+  .tantra__foto img {
+    aspect-ratio: auto;
+    width: 100%;
+    height: 68vw;          /* proporcional a largura da tela, ~quadrada */
+    max-height: 380px;
+    object-fit: cover;
+    object-position: center 30%;
+  }
 }
 
 /* ---------- o ritual: narrativa em etapas alternadas ---------- */
@@ -1460,9 +1471,12 @@ a { color: inherit; text-decoration: none; }
      o texto para muito baixo — deixa mais panoramica e limita a altura,
      mantendo o rosto enquadrado */
   .sobre__media img {
-    aspect-ratio: 5 / 4;
-    max-height: 62vh;
-    object-position: center 28%;
+    aspect-ratio: auto;
+    width: 100%;
+    height: 58vw;          /* panoramica, proporcional a largura */
+    max-height: 340px;
+    object-fit: cover;
+    object-position: center 26%;
   }
 
   /* cards de servico tambem empilham no scroll (grid vira bloco para o
