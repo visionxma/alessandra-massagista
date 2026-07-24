@@ -12,6 +12,7 @@
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src 'self' https://fonts.gstatic.com;
     img-src 'self' data:;
+    media-src 'self';
     frame-src https://www.google.com;
     connect-src 'self';
     base-uri 'none';
@@ -226,6 +227,7 @@
       </a>
       <nav class="nav__links" aria-label="Navegacao principal">
         <a href="#sobre">Sobre</a>
+        <a href="#momentos">Momentos</a>
         <a href="#servicos">Serviços</a>
         <a href="#spa-pes">Spa dos Pés</a>
         <a href="#ritual">O ritual</a>
@@ -242,6 +244,7 @@
     </div>
     <div class="nav__mobile" hidden>
       <a href="#sobre">Sobre</a>
+      <a href="#momentos">Momentos</a>
       <a href="#servicos">Serviços</a>
       <a href="#spa-pes">Spa dos Pés</a>
       <a href="#casais">Para casais</a>
@@ -307,6 +310,38 @@
             </li>
           </ul>
         </div>
+      </div>
+    </section>
+
+    <!-- ======= MOMENTOS (galeria estilo stories) ======= -->
+    <section class="momentos" id="momentos">
+      <div class="momentos__head">
+        <p class="eyebrow reveal">Momentos</p>
+        <h2 class="reveal">Um pouco de mim, fora da maca</h2>
+        <p class="momentos__dica" aria-hidden="true">Deslize
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </p>
+      </div>
+
+      <div class="momentos__trilha">
+        <figure class="momento reveal">
+          <img src="assets/img/momento-1.jpg" width="720" height="1280" loading="lazy" decoding="async"
+               alt="Alessandra, massagista em Belo Horizonte" />
+        </figure>
+
+        <figure class="momento momento--video reveal">
+          <video src="assets/video/momento.mp4" poster="assets/video/momento-poster.jpg"
+                 preload="metadata" playsinline controls
+                 width="480" height="848" aria-label="Vídeo de Alessandra"></video>
+          <span class="momento__play" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
+          </span>
+        </figure>
+
+        <figure class="momento reveal">
+          <img src="assets/img/momento-2.jpg" width="720" height="1280" loading="lazy" decoding="async"
+               alt="Alessandra, massagista em Belo Horizonte" />
+        </figure>
       </div>
     </section>
 

@@ -459,6 +459,107 @@ a { color: inherit; text-decoration: none; }
 
 .sobre__marks span { color: var(--ink-dim); font-size: 0.97rem; }
 
+/* ---------- momentos: galeria estilo stories (cards verticais 9:16) ---------- */
+
+.momentos {
+  padding: clamp(3.5rem, 7vw, 5.5rem) 0;
+  background: var(--branco);
+  border-top: 1px solid var(--line);
+  overflow: hidden;   /* segura qualquer excesso do carrossel */
+}
+
+.momentos__head {
+  max-width: 1240px;
+  margin: 0 auto clamp(1.8rem, 4vw, 2.6rem);
+  padding: 0 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem 1.2rem;
+}
+.momentos__head .eyebrow { flex-basis: 100%; }
+.momentos__head h2 { flex: 1; min-width: 60%; }
+
+.momentos__dica {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--gold);
+}
+.momentos__dica svg { width: 1.1em; height: 1.1em; }
+@media (prefers-reduced-motion: no-preference) {
+  .momentos__dica svg { animation: dica-desliza 1.8s ease-in-out infinite; }
+}
+
+.momentos__trilha {
+  display: flex;
+  gap: clamp(0.8rem, 2vw, 1.2rem);
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0.4rem 1.5rem 1.2rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.momentos__trilha::-webkit-scrollbar { display: none; }
+
+.momento {
+  position: relative;
+  flex: 0 0 auto;
+  width: clamp(220px, 62vw, 300px);   /* largura do card; no desktop travada */
+  aspect-ratio: 9 / 16;
+  border-radius: var(--radius);
+  overflow: hidden;
+  scroll-snap-align: center;
+  box-shadow: 0 18px 44px rgba(20, 17, 14, 0.18);
+  background: var(--preto-2);
+}
+
+.momento img,
+.momento video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.momento::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  pointer-events: none;
+}
+
+/* botao play sobreposto no card de video (some quando o video toca) */
+.momento--video .momento__play {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 62px; height: 62px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(20, 17, 14, 0.5);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  pointer-events: none;   /* o clique vai para o <video> */
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.momento--video .momento__play svg { width: 26px; height: 26px; margin-left: 3px; }
+.momento--video.is-playing .momento__play { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+
+/* no desktop os 3 cards ficam centralizados, sem precisar deslizar */
+@media (min-width: 861px) {
+  .momentos__trilha { justify-content: center; flex-wrap: wrap; overflow-x: visible; }
+  .momentos__dica { display: none; }
+  .momento { width: min(300px, 28vw); }
+}
+
 /* ---------- servicos (bloco preto, 30%) ---------- */
 
 .servicos { padding: clamp(3.5rem, 7vw, 5.5rem) 1.5rem; background: var(--preto); }

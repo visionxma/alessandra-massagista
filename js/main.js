@@ -71,3 +71,12 @@ const revealObserver = new IntersectionObserver(
 
 document.querySelectorAll(".reveal").forEach((el) => revealObserver.observe(el));
 
+/* ---------- galeria "momentos": esconde o play quando o video toca ---------- */
+
+document.querySelectorAll(".momento--video video").forEach((video) => {
+  const card = video.closest(".momento--video");
+  video.addEventListener("play", () => card.classList.add("is-playing"));
+  video.addEventListener("pause", () => card.classList.remove("is-playing"));
+  video.addEventListener("ended", () => card.classList.remove("is-playing"));
+});
+
