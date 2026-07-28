@@ -19,6 +19,14 @@ new IntersectionObserver(
 const toggle = document.querySelector(".nav__toggle");
 const mobileMenu = document.querySelector(".nav__mobile");
 
+function fecharMenu() {
+  mobileMenu.classList.remove("is-open");
+  toggle.classList.remove("is-open");
+  toggle.setAttribute("aria-expanded", "false");
+  toggle.setAttribute("aria-label", "Abrir menu");
+  document.body.style.overflow = "";
+}
+
 toggle.addEventListener("click", () => {
   const open = mobileMenu.classList.toggle("is-open");
   mobileMenu.hidden = false;
@@ -26,14 +34,11 @@ toggle.addEventListener("click", () => {
   toggle.setAttribute("aria-expanded", String(open));
   toggle.setAttribute("aria-label", open ? "Fechar menu" : "Abrir menu");
   if (!nav.classList.contains("is-scrolled")) nav.classList.toggle("is-scrolled", open);
+  document.body.style.overflow = open ? "hidden" : "";
 });
 
 mobileMenu.querySelectorAll("a").forEach((link) =>
-  link.addEventListener("click", () => {
-    mobileMenu.classList.remove("is-open");
-    toggle.classList.remove("is-open");
-    toggle.setAttribute("aria-expanded", "false");
-  })
+  link.addEventListener("click", fecharMenu)
 );
 
 /* ---------- revelacao no scroll, em cascata ----------

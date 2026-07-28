@@ -3,16 +3,68 @@
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://alessandramassagista.com/</loc>
-    <lastmod>2026-07-23</lastmod>
-    <changefreq>monthly</changefreq>
+    <lastmod>2026-07-28</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <image:image>
       <image:loc>https://alessandramassagista.com/assets/img/alessandra-retrato.jpeg</image:loc>
       <image:title>Alessandra, massagista em Belo Horizonte</image:title>
+      <image:caption>Massagista no bairro Carlos Prates, Belo Horizonte</image:caption>
     </image:image>
     <image:image>
       <image:loc>https://alessandramassagista.com/assets/img/alessandra-espaco.png</image:loc>
       <image:title>Espaço de massagem no bairro Carlos Prates</image:title>
+      <image:caption>Ambiente reservado para massagem em Belo Horizonte</image:caption>
     </image:image>
+    <image:image>
+      <image:loc>https://alessandramassagista.com/assets/img/tantrica-casais.jpg</image:loc>
+      <image:title>Sessão tântrica para casais em Belo Horizonte</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://alessandramassagista.com/assets/img/spa-pes.jpg</image:loc>
+      <image:title>Spa dos pés em Belo Horizonte</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://alessandramassagista.com/massagem-relaxante/</loc>
+    <lastmod>2026-07-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://alessandramassagista.com/massagem-tantrica/</loc>
+    <lastmod>2026-07-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://alessandramassagista.com/massagem-nuru/</loc>
+    <lastmod>2026-07-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://alessandramassagista.com/massagem-lingam/</loc>
+    <lastmod>2026-07-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://alessandramassagista.com/spa-dos-pes/</loc>
+    <lastmod>2026-07-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://alessandramassagista.com/massagem-para-casais/</loc>
+    <lastmod>2026-07-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://alessandramassagista.com/agendar/</loc>
+    <lastmod>2026-07-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
   </url>
 </urlset>
