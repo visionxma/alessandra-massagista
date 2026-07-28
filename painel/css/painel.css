@@ -462,6 +462,26 @@ button { background: none; border: 0; cursor: pointer; }
   text-align: center;
 }
 
+.historico-mais {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.4rem;
+  padding-top: 1.2rem;
+  border-top: 1px dashed var(--linha);
+}
+.historico-mais__info {
+  font-size: 0.78rem;
+  color: var(--texto-3);
+  margin: 0;
+}
+.historico-mais .btn {
+  font-size: 0.85rem;
+  padding: 0.55rem 1rem;
+}
+.historico-mais[hidden] { display: none; }
+
 /* ---------- ajustes ---------- */
 
 .cartao-form {

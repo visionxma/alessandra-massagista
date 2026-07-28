@@ -53,6 +53,9 @@ const estado = {
   servicoEscolhido: 0,
   config: dados.CONFIG_PADRAO,
   periodoCaixa: "dia",
+  // meses de historico carregados. Comeca com 1 (mes atual + anterior)
+  // para reduzir leituras do Firestore. Cresce sob demanda via botao.
+  mesesHistorico: 1,
   cancelarEscuta: null,
   cancelarEscutaBloqueios: null,
   cancelarEscutaConfig: null,
@@ -329,6 +332,11 @@ async function abrirApp() {
   escutarPeriodo();
   desenharCalendario();
 
+  // manutencao: em segundo plano, sem bloquear a UI, e no maximo 1x/dia
+  dados.limparOcupadosAntigos().then((r) => {
+    if (r?.removidos) console.info(`Limpeza: ${r.removidos} registros antigos removidos.`);
+  }).catch(() => { /* manutencao nunca invalida o painel */ });
+
   setInterval(atualizarContagem, 30000);
 
   // a fila de lembretes depende da hora atual: reavalia a cada minuto
@@ -342,9 +350,15 @@ async function abrirApp() {
 function escutarPeriodo() {
   estado.cancelarEscuta?.();
 
-  // janela ampla: cobre historico recente e agenda futura
-  const de = new Date(); de.setMonth(de.getMonth() - 3); de.setHours(0,0,0,0);
-  const ate = new Date(); ate.setMonth(ate.getMonth() + 6); ate.setHours(23,59,59,999);
+  // Janela sob demanda: comeca pequena (1 mes de historico) para nao
+  // consumir leituras a toa. O botao "Ver historico anterior" amplia.
+  // Futuro fica em 3 meses (agenda operacional), quase sempre suficiente.
+  const de = new Date();
+  de.setMonth(de.getMonth() - estado.mesesHistorico);
+  de.setHours(0, 0, 0, 0);
+  const ate = new Date();
+  ate.setMonth(ate.getMonth() + 3);
+  ate.setHours(23, 59, 59, 999);
 
   mostrarEsqueleto();
 
@@ -877,6 +891,41 @@ function ligarCaixa() {
       desenharCaixa();
     });
   });
+
+  // botao "Ver mais historico": amplia a janela de leitura sob demanda.
+  // Cada clique dobra a janela (1 -> 4 -> 12 meses) para o crescimento
+  // ser rapido mas o consumo aumentar de forma controlada.
+  const btnMais = $("#btn-mais-historico");
+  btnMais?.addEventListener("click", () => {
+    const proximo = estado.mesesHistorico >= 12 ? 24
+                  : estado.mesesHistorico >= 4  ? 12
+                  : 4;
+    estado.mesesHistorico = proximo;
+    escutarPeriodo();      // religa a escuta com a nova janela
+    atualizarInfoHistorico();
+  });
+
+  atualizarInfoHistorico();
+}
+
+function atualizarInfoHistorico() {
+  const info = $("#historico-info");
+  const btn = $("#btn-mais-historico");
+  if (!info || !btn) return;
+
+  const meses = estado.mesesHistorico;
+  info.textContent = meses === 1
+    ? "Exibindo o último 1 mês."
+    : `Exibindo os últimos ${meses} meses.`;
+
+  if (meses >= 24) {
+    btn.hidden = true;
+    info.textContent = "Exibindo os últimos 24 meses (limite).";
+  } else {
+    btn.hidden = false;
+    const proximo = meses >= 12 ? 24 : meses >= 4 ? 12 : 4;
+    btn.textContent = `Ver últimos ${proximo} meses`;
+  }
 }
 
 // ---------------------------------------------------------------------

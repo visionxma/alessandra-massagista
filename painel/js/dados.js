@@ -15,6 +15,50 @@ let auth = null;
 let fb = {};        // funcoes do SDK, carregadas sob demanda
 
 // ---------------------------------------------------------------------
+// Cache leve com TTL para reduzir consumo do Firestore.
+//
+// So aplicado a leituras publicas (agendar/), onde o usuario:
+//  - abre a pagina, escolhe servico, volta, muda dia -> re-consulta
+//  - fecha e reabre em minutos -> re-consulta
+//
+// TTL curto (60s) evita mostrar horario ja tomado como "livre".
+// Chave por range de datas (deData|ateData) para consultas de janela.
+// ---------------------------------------------------------------------
+
+const CACHE_TTL_MS = 60_000;
+const cache = new Map();
+
+function cacheChave(prefixo, ...partes) {
+  return prefixo + "|" + partes.map((p) => (p instanceof Date ? p.getTime() : String(p))).join("|");
+}
+
+function cacheGet(chave) {
+  const item = cache.get(chave);
+  if (!item) return null;
+  if (performance.now() - item.em > CACHE_TTL_MS) {
+    cache.delete(chave);
+    return null;
+  }
+  return item.valor;
+}
+
+function cacheSet(chave, valor) {
+  cache.set(chave, { valor, em: performance.now() });
+  // limita o cache a 40 entradas (rotativo, LRU aproximado)
+  if (cache.size > 40) {
+    const primeira = cache.keys().next().value;
+    cache.delete(primeira);
+  }
+}
+
+// invalida entradas por prefixo (chamado apos criar/mudar/excluir agendamento)
+function cacheInvalidar(prefixo) {
+  for (const chave of cache.keys()) {
+    if (chave.startsWith(prefixo + "|")) cache.delete(chave);
+  }
+}
+
+// ---------------------------------------------------------------------
 // Inicializacao
 // ---------------------------------------------------------------------
 
@@ -174,6 +218,8 @@ export async function criarAgendamento(dados) {
       fim: fb.Timestamp.fromDate(fim)
     });
 
+    // novo horario tomado invalida qualquer cache de "ocupados"
+    cacheInvalidar("ocupados");
     return ref.id;
   });
 }
@@ -192,6 +238,7 @@ async function sincronizarEspelho(id, { inicio, fim, liberar } = {}) {
         fim: fb.Timestamp.fromDate(fim)
       });
     }
+    cacheInvalidar("ocupados");
   } catch {
     // o espelho e um indice auxiliar: falhar aqui nao invalida a operacao
   }
@@ -253,6 +300,11 @@ export function observarOcupados(deData, ateData, callback) {
         .map((a) => ({ inicio: a.inicio, fim: a.fim }))));
   }
 
+  // cache-first: entrega imediato do cache (se fresco), snapshot atualiza depois
+  const chave = cacheChave("ocupados", deData, ateData);
+  const cached = cacheGet(chave);
+  if (cached) callback(cached);
+
   const q = fb.query(
     fb.collection(db, "ocupados"),
     fb.where("inicio", ">=", fb.Timestamp.fromDate(deData)),
@@ -260,14 +312,70 @@ export function observarOcupados(deData, ateData, callback) {
   );
 
   return fb.onSnapshot(q, (snap) => {
-    callback(snap.docs.map((d) => {
+    const lista = snap.docs.map((d) => {
       const x = d.data();
       return {
         inicio: x.inicio?.toDate ? x.inicio.toDate() : new Date(x.inicio),
         fim: x.fim?.toDate ? x.fim.toDate() : new Date(x.fim)
       };
-    }));
+    });
+    cacheSet(chave, lista);
+    callback(lista);
   }, () => callback([]));
+}
+
+// ---------------------------------------------------------------------
+// Auto-cleanup: remove ocupados antigos para nao crescer sem limite.
+//
+// O espelho 'ocupados' e consultado pelo site publico toda vez que
+// alguem abre /agendar/. Se nunca for limpo, cada consulta le tambem
+// horarios de meses atras que ja nao interessam a ninguem.
+//
+// Roda so uma vez por dia (guardado em localStorage) e so quando o
+// painel autenticado abre. Segue silencioso se falhar - o Firestore
+// tem limite de 500 deletes por batch, aqui usamos 200 por seguranca.
+// ---------------------------------------------------------------------
+
+const CHAVE_ULTIMO_CLEANUP = "ocupados_cleanup_ultimo";
+const DIAS_MANTER_OCUPADOS = 60;
+
+export async function limparOcupadosAntigos() {
+  if (MODO_DEMO) return { removidos: 0, demo: true };
+  if (!auth?.currentUser) return { removidos: 0, semLogin: true };
+
+  // executa no maximo uma vez por dia
+  try {
+    const ultimo = Number(localStorage.getItem(CHAVE_ULTIMO_CLEANUP)) || 0;
+    if (Date.now() - ultimo < 24 * 60 * 60 * 1000) return { removidos: 0, pulado: true };
+  } catch { /* localStorage indisponivel: segue */ }
+
+  const corte = new Date();
+  corte.setDate(corte.getDate() - DIAS_MANTER_OCUPADOS);
+
+  try {
+    const q = fb.query(
+      fb.collection(db, "ocupados"),
+      fb.where("fim", "<", fb.Timestamp.fromDate(corte)),
+      fb.limit(200)
+    );
+    const snap = await fb.getDocs(q);
+    if (snap.empty) {
+      try { localStorage.setItem(CHAVE_ULTIMO_CLEANUP, String(Date.now())); } catch {}
+      return { removidos: 0 };
+    }
+
+    // apaga em batch (transacional)
+    const batch = fb.writeBatch(db);
+    snap.docs.forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+
+    try { localStorage.setItem(CHAVE_ULTIMO_CLEANUP, String(Date.now())); } catch {}
+    return { removidos: snap.size };
+  } catch (erro) {
+    // falhar aqui nao invalida o painel: e apenas manutencao
+    console.warn("Falha na limpeza de ocupados antigos:", erro);
+    return { removidos: 0, erro: erro?.code };
+  }
 }
 
 // ---------------------------------------------------------------------
@@ -276,6 +384,10 @@ export function observarOcupados(deData, ateData, callback) {
 
 export function observarBloqueios(callback) {
   if (MODO_DEMO) return demo.observarBloqueios(callback);
+
+  const chave = "bloqueios|todos";
+  const cached = cacheGet(chave);
+  if (cached) callback(cached);
 
   return fb.onSnapshot(
     fb.collection(db, "bloqueios"),
@@ -291,6 +403,7 @@ export function observarBloqueios(callback) {
         };
       });
 
+      cacheSet(chave, lista);
       callback(lista);
 
       // Os motivos so chegam para quem esta autenticado. No site publico
@@ -346,6 +459,7 @@ async function gravarBloqueio(inicio, fim, motivo, diaTodo) {
       await fb.setDoc(fb.doc(db, "bloqueiosPrivados", ref.id), { motivo });
     } catch { /* o bloqueio ja valeu; o motivo e complementar */ }
   }
+  cacheInvalidar("bloqueios");
   return ref.id;
 }
 
@@ -355,6 +469,7 @@ export async function desbloquear(id) {
   try {
     await fb.deleteDoc(fb.doc(db, "bloqueiosPrivados", id));
   } catch { /* pode nao existir motivo */ }
+  cacheInvalidar("bloqueios");
 }
 
 // ---------------------------------------------------------------------
@@ -373,9 +488,17 @@ export const CONFIG_PADRAO = {
 export function observarConfig(callback) {
   if (MODO_DEMO) return demo.observarConfig(callback);
 
+  const chave = "config|agenda";
+  const cached = cacheGet(chave);
+  if (cached) callback(cached);
+
   return fb.onSnapshot(
     fb.doc(db, "configuracao", "agenda"),
-    (snap) => callback(snap.exists() ? { ...CONFIG_PADRAO, ...snap.data() } : CONFIG_PADRAO),
+    (snap) => {
+      const cfg = snap.exists() ? { ...CONFIG_PADRAO, ...snap.data() } : CONFIG_PADRAO;
+      cacheSet(chave, cfg);
+      callback(cfg);
+    },
     () => callback(CONFIG_PADRAO)
   );
 }
