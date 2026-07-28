@@ -115,7 +115,10 @@ function montarServicos() {
         <span class="servico__nome">${esc(s.nome)}</span>
         ${s.descricao ? `<span class="servico__desc">${esc(s.descricao)}</span>` : ""}
       </span>
-      <span class="servico__tempo">${s.duracaoMin} min</span>
+      <span class="servico__meta">
+        ${s.precoTexto ? `<span class="servico__preco">${esc(s.precoTexto)}</span>` : ""}
+        <span class="servico__tempo">${s.duracaoMin} min</span>
+      </span>
     </button>`).join("");
 
   ligarCliqueServico();
@@ -288,6 +291,9 @@ function montarResumo() {
   $("#resumo").innerHTML = `
     <div class="resumo__linha"><span class="resumo__rot">Serviço</span>
       <span class="resumo__val">${esc(estado.servico.nome)}</span></div>
+    ${estado.servico.precoTexto ? `
+    <div class="resumo__linha"><span class="resumo__rot">Valor</span>
+      <span class="resumo__val">${esc(estado.servico.precoTexto)}</span></div>` : ""}
     <div class="resumo__linha"><span class="resumo__rot">Dia</span>
       <span class="resumo__val">${dia}</span></div>
     <div class="resumo__linha"><span class="resumo__rot">Horário</span>
@@ -399,6 +405,9 @@ function mostrarSucesso(nome) {
   $("#ok-detalhe").innerHTML = `
     <div class="resumo__linha"><span class="resumo__rot">Serviço</span>
       <span class="resumo__val">${esc(estado.servico.nome)}</span></div>
+    ${estado.servico.precoTexto ? `
+    <div class="resumo__linha"><span class="resumo__rot">Valor</span>
+      <span class="resumo__val">${esc(estado.servico.precoTexto)}</span></div>` : ""}
     <div class="resumo__linha"><span class="resumo__rot">Quando</span>
       <span class="resumo__val">${dia}, ${hhmm(d)}</span></div>
     <div class="resumo__linha"><span class="resumo__rot">Onde</span>

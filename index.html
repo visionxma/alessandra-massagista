@@ -128,6 +128,8 @@
           "itemListElement": [
             {
               "@type": "Offer",
+              "price": "400.00",
+              "priceCurrency": "BRL",
               "itemOffered": {
                 "@type": "Service",
                 "name": "Massagem Relaxante",
@@ -136,6 +138,8 @@
             },
             {
               "@type": "Offer",
+              "price": "400.00",
+              "priceCurrency": "BRL",
               "itemOffered": {
                 "@type": "Service",
                 "name": "Massagem Tântrica",
@@ -144,6 +148,8 @@
             },
             {
               "@type": "Offer",
+              "price": "400.00",
+              "priceCurrency": "BRL",
               "itemOffered": {
                 "@type": "Service",
                 "name": "Massagem Nuru",
@@ -152,6 +158,8 @@
             },
             {
               "@type": "Offer",
+              "price": "400.00",
+              "priceCurrency": "BRL",
               "itemOffered": {
                 "@type": "Service",
                 "name": "Massagem Lingam",
@@ -160,6 +168,18 @@
             },
             {
               "@type": "Offer",
+              "price": "400.00",
+              "priceCurrency": "BRL",
+              "itemOffered": {
+                "@type": "Service",
+                "name": "Massagem Mix",
+                "description": "Combinação de 2 ou 3 massagens em uma única sessão, à escolha do cliente entre Relaxante, Nuru e Tântrica."
+              }
+            },
+            {
+              "@type": "Offer",
+              "price": "400.00",
+              "priceCurrency": "BRL",
               "itemOffered": {
                 "@type": "Service",
                 "name": "Spa dos Pés",
@@ -168,6 +188,8 @@
             },
             {
               "@type": "Offer",
+              "price": "800.00",
+              "priceCurrency": "BRL",
               "itemOffered": {
                 "@type": "Service",
                 "name": "Sessão Tântrica para Casais",
@@ -272,6 +294,22 @@
               "@type": "Answer",
               "text": "Sim. O espaço fica no Carlos Prates, a poucos minutos do Centro de Belo Horizonte, Padre Eustáquio, Savassi, Funcionários e Barro Preto. Também recebo pessoas vindas de Contagem e Nova Lima."
             }
+          },
+          {
+            "@type": "Question",
+            "name": "Quanto custa uma massagem?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Todas as modalidades individuais (Relaxante, Tântrica, Nuru, Lingam, Spa dos Pés e a Massagem Mix) custam R$ 400. A Sessão Tântrica para Casais é R$ 800, pois envolve os dois. O valor não varia por horário — vale igual de dia, à noite ou de madrugada."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Como funciona a Massagem Mix?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Na Massagem Mix você combina 2 ou 3 técnicas em uma única sessão, à sua escolha entre Relaxante, Nuru e Tântrica. O valor é o mesmo (R$ 400) independentemente de escolher 2 ou 3. Ideal para quem quer experimentar mais de uma modalidade ou personalizar o atendimento."
+            }
           }
         ]
       }
@@ -309,12 +347,13 @@
       <a class="btn btn--gold nav__mobile-cta" href="agendar/">Agendar horário</a>
 
       <p class="nav__mobile-titulo">Serviços</p>
-      <a class="nav__mobile-link" href="massagem-relaxante/"><span>Massagem Relaxante</span><small>Movimentos amplos, corpo inteiro</small></a>
-      <a class="nav__mobile-link" href="massagem-tantrica/"><span>Massagem Tântrica</span><small>Respiração, presença e toque consciente</small></a>
-      <a class="nav__mobile-link" href="massagem-nuru/"><span>Massagem Nuru</span><small>Corpo a corpo com gel específico</small></a>
-      <a class="nav__mobile-link" href="massagem-lingam/"><span>Massagem Lingam</span><small>Ritual tântrico focado</small></a>
-      <a class="nav__mobile-link" href="spa-dos-pes/"><span>Spa dos Pés</span><small>45 minutos de descanso</small></a>
-      <a class="nav__mobile-link" href="massagem-para-casais/"><span>Tântrica para Casais</span><small>Ritual a dois, sigilo total</small></a>
+      <a class="nav__mobile-link" href="massagem-relaxante/"><span>Massagem Relaxante</span><small>R$ 400 · Movimentos amplos, corpo inteiro</small></a>
+      <a class="nav__mobile-link" href="massagem-tantrica/"><span>Massagem Tântrica</span><small>R$ 400 · Respiração, presença e toque</small></a>
+      <a class="nav__mobile-link" href="massagem-nuru/"><span>Massagem Nuru</span><small>R$ 400 · Corpo a corpo com gel específico</small></a>
+      <a class="nav__mobile-link" href="massagem-lingam/"><span>Massagem Lingam</span><small>R$ 400 · Ritual tântrico focado</small></a>
+      <a class="nav__mobile-link" href="massagem-mix/"><span>Massagem Mix</span><small>R$ 400 · 2 ou 3 técnicas numa sessão</small></a>
+      <a class="nav__mobile-link" href="spa-dos-pes/"><span>Spa dos Pés</span><small>R$ 400 · 45 minutos de descanso</small></a>
+      <a class="nav__mobile-link" href="massagem-para-casais/"><span>Tântrica para Casais</span><small>R$ 800 · Ritual a dois, sigilo total</small></a>
 
       <p class="nav__mobile-titulo">Navegar</p>
       <a class="nav__mobile-item" href="#sobre">Sobre mim</a>
@@ -426,24 +465,36 @@
           <span class="servico__num">01</span>
           <h3>Massagem Relaxante</h3>
           <p>Movimentos amplos e contínuos que soltam a tensão do corpo inteiro e acalmam a mente. O clássico que nunca falha.</p>
+          <span class="servico__preco"><span class="servico__preco-cifra">R$</span><span class="servico__preco-valor">400</span></span>
           <span class="servico__cta">Saber mais<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 6l6 6-6 6"/></svg></span>
         </a>
         <a class="servico reveal" href="massagem-tantrica/" style="--d: 90ms">
           <span class="servico__num">02</span>
           <h3>Massagem Tântrica</h3>
           <p>Um ritual de respiração, toque e presença que amplia a percepção do corpo e desperta uma energia nova.</p>
+          <span class="servico__preco"><span class="servico__preco-cifra">R$</span><span class="servico__preco-valor">400</span></span>
           <span class="servico__cta">Saber mais<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 6l6 6-6 6"/></svg></span>
         </a>
         <a class="servico reveal" href="massagem-nuru/" style="--d: 180ms">
           <span class="servico__num">03</span>
           <h3>Massagem Nuru</h3>
           <p>Contato corpo a corpo com gel específico, em deslizamentos envolventes. Uma experiência sensorial intensa e única.</p>
+          <span class="servico__preco"><span class="servico__preco-cifra">R$</span><span class="servico__preco-valor">400</span></span>
           <span class="servico__cta">Saber mais<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 6l6 6-6 6"/></svg></span>
         </a>
         <a class="servico reveal" href="massagem-lingam/" style="--d: 270ms">
           <span class="servico__num">04</span>
           <h3>Massagem Lingam</h3>
           <p>Técnica focada e conduzida com calma, que trabalha energia e relaxamento em um ritual de entrega total.</p>
+          <span class="servico__preco"><span class="servico__preco-cifra">R$</span><span class="servico__preco-valor">400</span></span>
+          <span class="servico__cta">Saber mais<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        </a>
+        <a class="servico servico--destaque reveal" href="massagem-mix/" style="--d: 360ms">
+          <span class="servico__badge">Novidade</span>
+          <span class="servico__num">05</span>
+          <h3>Massagem Mix</h3>
+          <p>Você escolhe 2 ou 3 técnicas — entre Relaxante, Nuru e Tântrica — combinadas numa única sessão. O melhor de cada uma, do seu jeito.</p>
+          <span class="servico__preco"><span class="servico__preco-cifra">R$</span><span class="servico__preco-valor">400</span><span class="servico__preco-nota">2 ou 3 juntas</span></span>
           <span class="servico__cta">Saber mais<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 6l6 6-6 6"/></svg></span>
         </a>
       </div>
@@ -478,7 +529,7 @@
           </ul>
 
           <div class="spa__rodape reveal">
-            <span class="spa__tempo">45 minutos</span>
+            <span class="spa__tempo">45 min · R$ 400</span>
             <a class="hero__link" href="spa-dos-pes/" style="margin-right:auto">Saber mais</a>
             <a class="btn btn--gold" href="agendar/">
               <svg class="ico-wa" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M3 10h18M8 3v4M16 3v4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="M9.5 15.5l1.8 1.8 3.4-3.6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -522,7 +573,7 @@
           </ul>
 
           <div class="tantra__rodape reveal">
-            <span class="tantra__tempo">Sob consulta</span>
+            <span class="tantra__tempo">R$ 800 · a dois</span>
             <a class="hero__link" href="massagem-para-casais/" style="margin-right:auto">Saber mais</a>
             <a class="btn btn--gold" href="agendar/">
               <svg class="ico-wa" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M3 10h18M8 3v4M16 3v4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="M9.5 15.5l1.8 1.8 3.4-3.6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -714,7 +765,15 @@
           </details>
           <details class="faq__item reveal" name="faq">
             <summary>Quais tipos de massagem são oferecidos?</summary>
-            <p>Massagem relaxante, tântrica, nuru e lingam. Cada sessão é adaptada ao seu momento, ao seu ritmo e às suas preferências.</p>
+            <p>Massagem relaxante, tântrica, nuru, lingam, spa dos pés, massagem mix e sessão tântrica para casais. Cada sessão é adaptada ao seu momento, ao seu ritmo e às suas preferências.</p>
+          </details>
+          <details class="faq__item reveal" name="faq">
+            <summary>Quanto custa uma massagem?</summary>
+            <p>Todas as modalidades individuais custam <strong>R$ 400</strong>. A <strong>Sessão Tântrica para Casais</strong> é <strong>R$ 800</strong> (envolve os dois). O valor não muda por horário — vale igual de dia, à noite ou de madrugada.</p>
+          </details>
+          <details class="faq__item reveal" name="faq">
+            <summary>Como funciona a Massagem Mix?</summary>
+            <p>Você combina 2 ou 3 técnicas numa única sessão, à sua escolha entre Relaxante, Nuru e Tântrica. O valor é o mesmo (<strong>R$ 400</strong>) — ideal para quem quer experimentar mais de uma modalidade ou personalizar o atendimento.</p>
           </details>
           <details class="faq__item reveal" name="faq">
             <summary>Como faço para agendar um horário?</summary>

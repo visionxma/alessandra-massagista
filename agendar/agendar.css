@@ -118,14 +118,34 @@ h1 { font-family: var(--display); font-size: 1.5rem; font-weight: 500; margin-bo
 
 /* o wrapper precisa ser bloco para o nome e a descricao empilharem.
    Cobre as duas formas do markup para nao depender de cache do navegador. */
-.servico__info,
-.servico > span:not(.servico__tempo) { display: block; min-width: 0; }
+.servico__info { display: block; min-width: 0; flex: 1; }
 
 .servico__nome { display: block; font-family: var(--display); font-size: 1.14rem; line-height: 1.25; }
 .servico__desc { display: block; color: var(--ink-dim); font-size: 0.84rem; line-height: 1.5; margin-top: 0.25rem; }
+
+.servico__meta {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.servico__preco {
+  font-family: var(--display);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ouro);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
 .servico__tempo {
-  flex: none; font-size: 0.78rem; font-weight: 600; color: var(--ouro);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--ink-dim);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 /* ---------- dias ---------- */

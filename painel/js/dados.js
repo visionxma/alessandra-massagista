@@ -544,11 +544,13 @@ export async function auditar(evento, detalhe = "") {
 // Espelho local dos servicos: a lista aparece na hora, sem esperar a rede.
 // Se o banco tiver algo diferente, o que vem de la substitui esta lista.
 export const SERVICOS_PADRAO = [
-  { nome: "Massagem Relaxante", duracaoMin: 60, descricao: "Movimentos amplos e contínuos que soltam a tensão do corpo inteiro." },
-  { nome: "Massagem Tântrica",  duracaoMin: 90, descricao: "Ritual de respiração, toque e presença." },
-  { nome: "Massagem Nuru",      duracaoMin: 90, descricao: "Contato corpo a corpo com gel específico." },
-  { nome: "Massagem Lingam",    duracaoMin: 60, descricao: "Técnica focada, conduzida com calma." },
-  { nome: "Spa dos Pés",        duracaoMin: 45, descricao: "Escalda-pés aromático, esfoliação e massagem com pedras quentes." }
+  { nome: "Massagem Relaxante",       duracaoMin: 60,  precoTexto: "R$ 400", descricao: "Movimentos amplos e contínuos que soltam a tensão do corpo inteiro." },
+  { nome: "Massagem Tântrica",        duracaoMin: 90,  precoTexto: "R$ 400", descricao: "Ritual de respiração, toque e presença." },
+  { nome: "Massagem Nuru",            duracaoMin: 90,  precoTexto: "R$ 400", descricao: "Contato corpo a corpo com gel específico." },
+  { nome: "Massagem Lingam",          duracaoMin: 60,  precoTexto: "R$ 400", descricao: "Técnica focada, conduzida com calma." },
+  { nome: "Massagem Mix",             duracaoMin: 120, precoTexto: "R$ 400", descricao: "Escolha 2 ou 3 técnicas (Relaxante, Nuru, Tântrica) numa única sessão." },
+  { nome: "Spa dos Pés",              duracaoMin: 45,  precoTexto: "R$ 400", descricao: "Escalda-pés aromático, esfoliação e massagem com pedras quentes." },
+  { nome: "Tântrica para Casais",     duracaoMin: 120, precoTexto: "R$ 800", descricao: "Ritual tântrico conduzido para o casal (a dois)." }
 ];
 
 export async function lerServicos() {
