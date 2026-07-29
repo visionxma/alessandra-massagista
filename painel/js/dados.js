@@ -6,7 +6,7 @@
 // permite o modo demonstracao offline.
 // =====================================================================
 
-import { firebaseConfig, MODO_DEMO } from "./config.js?v=5";
+import { firebaseConfig, MODO_DEMO } from "./config.js?v=6";
 
 const CDN = "https://www.gstatic.com/firebasejs/10.12.2";
 
@@ -619,10 +619,33 @@ export function observarServicos(callback) {
       const doBanco = snap.docs
         .map((d) => ({ id: d.id, ...d.data() }))
         .filter((s) => s.ativo !== false)
+        .filter((s) => !s.excluidoEm)   // esconde itens da lixeira
         .sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
       callback(mesclarComPadrao(doBanco).map(normalizarServico));
     },
     () => callback(SERVICOS_PADRAO)
+  );
+}
+
+// Escuta apenas servicos na lixeira (com excluidoEm). Callback recebe
+// lista ordenada pelo mais recente exclusao primeiro.
+export function observarLixeira(callback) {
+  if (MODO_DEMO) return demo.observarLixeiraServicos?.(callback) || (() => {});
+
+  return fb.onSnapshot(
+    fb.collection(db, "servicos"),
+    (snap) => {
+      const lista = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .filter((s) => s.excluidoEm)
+        .map((s) => ({
+          ...s,
+          excluidoEm: s.excluidoEm?.toDate ? s.excluidoEm.toDate() : new Date(s.excluidoEm)
+        }))
+        .sort((a, b) => b.excluidoEm - a.excluidoEm);
+      callback(lista);
+    },
+    () => callback([])
   );
 }
 
@@ -654,9 +677,43 @@ export async function salvarServico(servico) {
   return ref.id;
 }
 
+// Soft delete: move o servico para a lixeira mantendo o registro no
+// banco. A UI trata como excluido (some da LP e do agendamento), mas
+// e recuperavel pela tela de Lixeira.
 export async function removerServico(id) {
-  if (MODO_DEMO) return demo.removerServico(id);
+  if (MODO_DEMO) return demo.removerServico?.(id);
+  await fb.updateDoc(fb.doc(db, "servicos", id), {
+    excluidoEm: fb.serverTimestamp(),
+    ativo: false
+  });
+}
+
+// Restaura um servico da lixeira: limpa o marcador de exclusao e o
+// deixa ativo novamente.
+export async function restaurarDaLixeira(id) {
+  if (MODO_DEMO) return demo.restaurarServico?.(id);
+  await fb.updateDoc(fb.doc(db, "servicos", id), {
+    excluidoEm: fb.deleteField(),
+    ativo: true
+  });
+}
+
+// Apaga definitivamente do banco. So chamada quando o servico ja esta
+// na lixeira e o dono confirma a exclusao permanente.
+export async function excluirPermanente(id) {
+  if (MODO_DEMO) return demo.excluirServicoPermanente?.(id);
   await fb.deleteDoc(fb.doc(db, "servicos", id));
+}
+
+// Migracao manual: forca a atualizacao dos precos padroes agora, sem
+// esperar o boot automatico. Serve pro botao "Atualizar precos padrao"
+// no painel. Ignora o marker de localStorage.
+export async function forcarMigracaoServicos() {
+  if (MODO_DEMO) return { pulado: true, demo: true };
+  if (!auth?.currentUser) return { pulado: true, semLogin: true };
+  // remove marker antigo, se existir, para migrarServicosSePreciso rodar
+  try { localStorage.removeItem(CHAVE_MIGRACAO_SERVICOS); } catch {}
+  return migrarServicosSePreciso();
 }
 
 // ---------------------------------------------------------------------

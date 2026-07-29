@@ -4,8 +4,8 @@
 
 // Cache-busting: incrementar a versao em toda mudanca em dados.js/config.js
 // para o navegador buscar o arquivo novo, ignorando cache HTTP e do disco.
-import { MODO_DEMO } from "./config.js?v=5";
-import * as dados from "./dados.js?v=5";
+import { MODO_DEMO } from "./config.js?v=6";
+import * as dados from "./dados.js?v=6";
 
 // ---------------------------------------------------------------------
 // Atalhos e utilitarios
@@ -297,6 +297,7 @@ async function iniciar() {
   ligarCaixa();
   ligarAjustes();
   ligarServicos();
+  ligarLixeira();
   ligarBackup();
   monitorarConexao();
   registrarPWA();
@@ -1252,19 +1253,140 @@ function ligarServicos() {
     const alvo = servicoEmEdicao;
     fechar("#folha-servico");
     pedirConfirmacao(
-      `Excluir ${alvo.nome}?`,
-      "O serviço deixa de aparecer no site. Os atendimentos já marcados continuam na agenda.",
+      `Mover ${alvo.nome} para a lixeira?`,
+      "O serviço deixa de aparecer no site e no agendamento. Você pode restaurar depois pela Lixeira. Atendimentos já marcados continuam na agenda.",
       async () => {
         try {
           await dados.removerServico(alvo.id);
-          avisar("Serviço excluído", "bom");
+          avisar("Movido para a lixeira", "bom");
+        } catch {
+          avisar("Não foi possível mover", "ruim");
+        }
+      }
+    );
+  });
+
+  // Botao "Atualizar precos padrao": corrige os precos legados no
+  // banco (R$ 180/220 etc) pros valores oficiais do SERVICOS_PADRAO.
+  $("#btn-migrar-precos")?.addEventListener("click", () => {
+    pedirConfirmacao(
+      "Atualizar preços padrão?",
+      "Vai sobrescrever os preços dos serviços do padrão (Relaxante, Tântrica, Nuru, Lingam, Spa dos Pés) pelos valores oficiais. Serviços criados por você que não existem no padrão não são tocados.",
+      async () => {
+        const botao = $("#btn-migrar-precos");
+        botao.disabled = true;
+        botao.textContent = "Atualizando...";
+        try {
+          const r = await dados.forcarMigracaoServicos();
+          if (r?.erro) throw new Error(r.erro);
+          avisar(
+            r?.atualizados ? `${r.atualizados} serviço(s) atualizados` : "Nada para atualizar",
+            "bom"
+          );
+        } catch {
+          avisar("Não foi possível atualizar", "ruim");
+        } finally {
+          botao.disabled = false;
+          botao.textContent = "Atualizar preços padrão";
+        }
+      }
+    );
+  });
+
+  // Botao "Lixeira": abre a folha listando servicos excluidos
+  $("#btn-abrir-lixeira")?.addEventListener("click", () => {
+    abrir("#folha-lixeira");
+    renderizarLixeira();
+  });
+}
+
+// ---------------------------------------------------------------------
+// Lixeira de servicos
+//
+// Escuta em tempo real quantos itens estao na lixeira (contador no
+// botao) e renderiza a lista com acoes Restaurar / Excluir permanente
+// quando a folha esta aberta.
+// ---------------------------------------------------------------------
+
+let lixeiraAtual = [];
+
+function ligarLixeira() {
+  dados.observarLixeira?.((lista) => {
+    lixeiraAtual = lista;
+    const contador = $("#lixeira-contador");
+    if (contador) {
+      contador.textContent = lista.length;
+      contador.hidden = lista.length === 0;
+    }
+    // se a folha estiver aberta, atualiza a lista mostrada
+    if (!$("#folha-lixeira").hidden) renderizarLixeira();
+  });
+}
+
+function renderizarLixeira() {
+  const alvo = $("#lista-lixeira");
+  if (!alvo) return;
+
+  if (!lixeiraAtual.length) {
+    alvo.innerHTML = `<div class="item-lixeira--vazio">A lixeira está vazia.</div>`;
+    return;
+  }
+
+  const formatador = new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit"
+  });
+
+  alvo.innerHTML = lixeiraAtual.map((s) => `
+    <div class="item-lixeira" data-id="${escapar(s.id)}">
+      <div>
+        <div class="item-lixeira__nome">${escapar(s.nome)}</div>
+        <div class="item-lixeira__meta">Excluído em ${escapar(formatador.format(s.excluidoEm))}</div>
+      </div>
+      <div class="item-lixeira__acoes">
+        <button class="btn btn--principal" data-restaurar="${escapar(s.id)}">Restaurar</button>
+        <button class="btn btn--neutro" data-apagar="${escapar(s.id)}">Excluir permanente</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+// event delegation: um listener no container, atende os cliques nos
+// botoes Restaurar / Excluir permanente
+document.addEventListener("click", async (e) => {
+  const restaurar = e.target.closest("[data-restaurar]");
+  const apagar = e.target.closest("[data-apagar]");
+
+  if (restaurar) {
+    const id = restaurar.dataset.restaurar;
+    restaurar.disabled = true;
+    try {
+      await dados.restaurarDaLixeira?.(id);
+      avisar("Serviço restaurado", "bom");
+    } catch {
+      avisar("Não foi possível restaurar", "ruim");
+      restaurar.disabled = false;
+    }
+    return;
+  }
+
+  if (apagar) {
+    const id = apagar.dataset.apagar;
+    const item = lixeiraAtual.find((s) => s.id === id);
+    if (!item) return;
+    pedirConfirmacao(
+      `Excluir "${item.nome}" para sempre?`,
+      "Essa ação é irreversível. O serviço será apagado do banco.",
+      async () => {
+        try {
+          await dados.excluirPermanente?.(id);
+          avisar("Excluído permanentemente", "bom");
         } catch {
           avisar("Não foi possível excluir", "ruim");
         }
       }
     );
-  });
-}
+  }
+});
 
 // ---------------------------------------------------------------------
 // Backup e registro de atividades

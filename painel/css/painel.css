@@ -387,6 +387,73 @@ button { background: none; border: 0; cursor: pointer; }
   cursor: not-allowed;
 }
 
+/* Botoes de acao na secao de servicos (migrar, lixeira) */
+.acoes-servicos {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.9rem;
+}
+.acoes-servicos .btn {
+  flex: 1;
+  min-width: 140px;
+  font-size: 0.82rem;
+  padding: 0.7rem 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+/* Pill: contador pequeno pra ficar dentro do botao de lixeira */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 0.4rem;
+  background: var(--ouro);
+  color: var(--fundo);
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+/* Cartao de servico na lixeira: 2 acoes por linha */
+.item-lixeira {
+  padding: 0.9rem 1rem;
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-m);
+  display: grid;
+  gap: 0.6rem;
+}
+.item-lixeira__nome {
+  font-family: var(--display);
+  font-size: 1.05rem;
+  color: var(--texto-1);
+}
+.item-lixeira__meta {
+  font-size: 0.78rem;
+  color: var(--texto-3);
+}
+.item-lixeira__acoes {
+  display: flex;
+  gap: 0.5rem;
+}
+.item-lixeira__acoes .btn {
+  flex: 1;
+  font-size: 0.82rem;
+  padding: 0.55rem 0.8rem;
+}
+.item-lixeira--vazio {
+  padding: 1.8rem 1rem;
+  text-align: center;
+  color: var(--texto-3);
+  font-size: 0.88rem;
+}
+
 /* ajustes: textos e registro de atividades */
 
 .ajuste-texto {

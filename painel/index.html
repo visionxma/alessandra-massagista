@@ -40,7 +40,7 @@
   <link rel="apple-touch-icon" href="icons/icone-180.png" />
   <link rel="icon" href="icons/icone-192.png" />
 
-  <link rel="stylesheet" href="css/painel.css?v=5" />
+  <link rel="stylesheet" href="css/painel.css?v=6" />
 </head>
 <body>
 
@@ -268,6 +268,14 @@
         </div>
         <div id="lista-servicos" class="lista"></div>
 
+        <div class="acoes-servicos">
+          <button class="btn btn--neutro" id="btn-migrar-precos">Atualizar preços padrão</button>
+          <button class="btn btn--neutro" id="btn-abrir-lixeira">
+            <span id="lixeira-contador" class="pill" hidden>0</span>
+            Lixeira
+          </button>
+        </div>
+
         <h2 class="secao-titulo">Backup e segurança</h2>
         <div class="cartao-form">
           <p class="ajuste-texto">Baixe uma cópia de toda a sua agenda. Guarde em local seguro.</p>
@@ -451,9 +459,22 @@
 
           <div class="acoes">
             <button type="submit" class="btn btn--principal btn--bloco" id="btn-salvar-srv">Salvar</button>
-            <button type="button" class="btn btn--neutro btn--bloco" id="btn-excluir-srv" hidden>Excluir serviço</button>
+            <button type="button" class="btn btn--neutro btn--bloco" id="btn-excluir-srv" hidden>Mover para lixeira</button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ LIXEIRA DE SERVIÇOS ============ -->
+  <div class="folha" id="folha-lixeira" hidden>
+    <div class="folha__fundo" data-fechar></div>
+    <div class="folha__painel" role="dialog" aria-modal="true" aria-labelledby="titulo-lixeira">
+      <div class="folha__puxador" aria-hidden="true"></div>
+      <div class="folha__corpo">
+        <h2 class="folha__titulo" id="titulo-lixeira">Lixeira de serviços</h2>
+        <p class="ajuste-texto">Serviços excluídos ficam aqui e podem ser restaurados. Excluir permanentemente é irreversível.</p>
+        <div id="lista-lixeira" class="lista"></div>
       </div>
     </div>
   </div>
@@ -572,6 +593,6 @@
 
   <div class="aviso" id="aviso" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="js/painel.js?v=5"></script>
+  <script type="module" src="js/painel.js?v=6"></script>
 </body>
 </html>
