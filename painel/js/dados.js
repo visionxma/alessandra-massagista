@@ -6,7 +6,7 @@
 // permite o modo demonstracao offline.
 // =====================================================================
 
-import { firebaseConfig, MODO_DEMO } from "./config.js?v=4";
+import { firebaseConfig, MODO_DEMO } from "./config.js?v=5";
 
 const CDN = "https://www.gstatic.com/firebasejs/10.12.2";
 
@@ -337,7 +337,92 @@ export function observarOcupados(deData, ateData, callback) {
 // ---------------------------------------------------------------------
 
 const CHAVE_ULTIMO_CLEANUP = "ocupados_cleanup_ultimo";
+const CHAVE_MIGRACAO_SERVICOS = "servicos_migracao_v2_aplicada";
 const DIAS_MANTER_OCUPADOS = 60;
+
+// Migracao unica dos servicos legados: adiciona slug, ativo=true, e
+// atualiza precoCentavos dos que estao no padrao para o valor oficial
+// (R$ 400 nas modalidades individuais, R$ 800 no casais). Roda so uma
+// vez por conta autenticada, silencioso. Nao mexe em servicos criados
+// pelo painel que nao tenham correspondencia no padrao.
+export async function migrarServicosSePreciso() {
+  if (MODO_DEMO) return { pulado: true, demo: true };
+  if (!auth?.currentUser) return { pulado: true, semLogin: true };
+
+  try {
+    if (localStorage.getItem(CHAVE_MIGRACAO_SERVICOS) === "1") {
+      return { pulado: true, jaFeita: true };
+    }
+  } catch { /* sem localStorage: tenta rodar */ }
+
+  try {
+    const snap = await fb.getDocs(fb.collection(db, "servicos"));
+    if (snap.empty) {
+      try { localStorage.setItem(CHAVE_MIGRACAO_SERVICOS, "1"); } catch {}
+      return { atualizados: 0 };
+    }
+
+    let atualizados = 0;
+    const batch = fb.writeBatch(db);
+
+    for (const doc of snap.docs) {
+      const atual = doc.data();
+      const padrao = SERVICOS_PADRAO.find((p) => p.nome === atual.nome);
+      const patch = {};
+
+      // slug: gera do nome, so se faltar
+      if (!atual.slug) {
+        patch.slug = slugDo(atual.nome || "");
+      }
+
+      // ativo: garante que existe (default true)
+      if (atual.ativo === undefined) {
+        patch.ativo = true;
+      }
+
+      // preco: se ha padrao com precoTexto oficial e o atual esta
+      // diferente, atualiza pro oficial (corrige os R$ 180/220/250 etc)
+      if (padrao?.precoTexto) {
+        const centavosPadrao = centavosDoTexto(padrao.precoTexto);
+        if (centavosPadrao && atual.precoCentavos !== centavosPadrao) {
+          patch.precoCentavos = centavosPadrao;
+        }
+      }
+
+      // descricaoLonga e beneficios: comeca vazio, dono preenche
+      if (atual.descricaoLonga === undefined) patch.descricaoLonga = "";
+      if (atual.beneficios === undefined) patch.beneficios = [];
+
+      if (Object.keys(patch).length) {
+        batch.update(doc.ref, patch);
+        atualizados++;
+      }
+    }
+
+    if (atualizados) await batch.commit();
+    try { localStorage.setItem(CHAVE_MIGRACAO_SERVICOS, "1"); } catch {}
+    return { atualizados };
+  } catch (erro) {
+    console.warn("Falha na migracao de servicos:", erro);
+    return { erro: erro?.code };
+  }
+}
+
+// helpers locais da migracao
+function slugDo(nome) {
+  return String(nome)
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")   // remove acentos
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim().replace(/\s+/g, "-").replace(/-+/g, "-").slice(0, 60);
+}
+
+function centavosDoTexto(texto) {
+  // "R$ 400" -> 40000
+  const so = String(texto).replace(/[^\d,\.]/g, "").replace(",", ".");
+  const n = parseFloat(so);
+  return Number.isFinite(n) ? Math.round(n * 100) : 0;
+}
 
 export async function limparOcupadosAntigos() {
   if (MODO_DEMO) return { removidos: 0, demo: true };
@@ -546,11 +631,19 @@ export async function salvarServico(servico) {
 
   const dados = {
     nome: servico.nome.trim(),
+    // slug travado: gerado uma vez na criacao, nunca alterado depois.
+    // Protege as URLs ja indexadas pelo Google.
+    slug: (servico.slug || "").trim(),
     descricao: (servico.descricao || "").trim(),
+    descricaoLonga: (servico.descricaoLonga || "").trim(),
+    beneficios: Array.isArray(servico.beneficios)
+      ? servico.beneficios.map((b) => String(b).trim()).filter(Boolean).slice(0, 6)
+      : [],
     duracaoMin: Number(servico.duracaoMin) || 60,
     precoCentavos: Number(servico.precoCentavos) || 0,
     ordem: Number(servico.ordem) || 99,
-    ativo: true
+    ativo: servico.ativo !== false,
+    atualizadoEm: fb.serverTimestamp()
   };
 
   if (servico.id) {
@@ -706,17 +799,22 @@ export async function lerServicos() {
 //      no banco com precoCentavos desatualizado.
 //   2. Se nao ha padrao (servico novo criado pelo painel), usa o que
 //      esta no banco: precoTexto explicito ou derivado de precoCentavos.
+// Preenche precoTexto e descricao. Prioridade:
+//   1. Dados do banco (o painel edita e vale imediatamente).
+//   2. Fallback: padrao pelo nome do servico.
+// Servicos com ativo=false sao filtrados fora ANTES de chegar aqui.
 function normalizarServico(s) {
   const padrao = SERVICOS_PADRAO.find((p) => p.nome === s.nome);
 
-  const precoTexto = padrao?.precoTexto
-    || s.precoTexto
-    || (s.precoCentavos ? formatarPrecoDeCentavos(s.precoCentavos) : "");
+  const precoTexto = s.precoTexto
+    || (s.precoCentavos ? formatarPrecoDeCentavos(s.precoCentavos) : null)
+    || padrao?.precoTexto
+    || "";
 
   return {
     ...s,
     precoTexto,
-    descricao: padrao?.descricao || s.descricao || ""
+    descricao: s.descricao || padrao?.descricao || ""
   };
 }
 

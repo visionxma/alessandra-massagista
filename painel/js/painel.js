@@ -4,8 +4,8 @@
 
 // Cache-busting: incrementar a versao em toda mudanca em dados.js/config.js
 // para o navegador buscar o arquivo novo, ignorando cache HTTP e do disco.
-import { MODO_DEMO } from "./config.js?v=4";
-import * as dados from "./dados.js?v=4";
+import { MODO_DEMO } from "./config.js?v=5";
+import * as dados from "./dados.js?v=5";
 
 // ---------------------------------------------------------------------
 // Atalhos e utilitarios
@@ -338,6 +338,12 @@ async function abrirApp() {
   dados.limparOcupadosAntigos().then((r) => {
     if (r?.removidos) console.info(`Limpeza: ${r.removidos} registros antigos removidos.`);
   }).catch(() => { /* manutencao nunca invalida o painel */ });
+
+  // migracao unica dos servicos: garante slug, ativo=true e precos
+  // atualizados. Roda so uma vez por dispositivo autenticado.
+  dados.migrarServicosSePreciso().then((r) => {
+    if (r?.atualizados) console.info(`Migracao: ${r.atualizados} servicos atualizados.`);
+  }).catch(() => { /* migracao complementar, nunca invalida o painel */ });
 
   setInterval(atualizarContagem, 30000);
 
@@ -1128,6 +1134,19 @@ function precoDoCampo() {
   return paraCentavos($("#srv-preco").value);
 }
 
+// Gera slug estavel a partir do nome (sem acentos, espacos -> hifen,
+// so alfanumerico). Usado apenas na CRIACAO do servico - depois trava.
+function gerarSlug(nome) {
+  return String(nome)
+    .normalize("NFD").replace(/[̀-ͯ]/g, "") // remove acentos
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .slice(0, 60);
+}
+
 function abrirServico(servico = null) {
   servicoEmEdicao = servico;
   $("#titulo-servico").textContent = servico ? "Editar serviço" : "Novo serviço";
@@ -1136,7 +1155,25 @@ function abrirServico(servico = null) {
 
   $("#srv-nome").value = servico?.nome || "";
   $("#srv-desc").value = servico?.descricao || "";
+  $("#srv-desc-longa").value = servico?.descricaoLonga || "";
+  // beneficios: array no banco, textarea um por linha na UI
+  const beneficios = Array.isArray(servico?.beneficios) ? servico.beneficios : [];
+  $("#srv-beneficios").value = beneficios.join("\n");
   $("#srv-duracao").value = String(servico?.duracaoMin || 60);
+  $("#srv-ativo").checked = servico?.ativo !== false;
+
+  // slug: mostra so ao editar (nunca ao criar - gerado no submit).
+  // Read-only pra proteger SEO das URLs ja indexadas pelo Google.
+  const campoSlug = $("#campo-slug");
+  if (servico?.slug || servico?.id) {
+    campoSlug.hidden = false;
+    const slug = servico.slug || gerarSlug(servico.nome || "");
+    $("#srv-slug").value = slug;
+    $("#srv-slug-previa").textContent = slug || "sem-url";
+  } else {
+    campoSlug.hidden = true;
+  }
+
   // valor limpo, so numeros: evita reconverter texto ja formatado
   const c = servico?.precoCentavos || 0;
   $("#srv-preco").value = c ? (c / 100).toFixed(2).replace(".", ",") : "";
@@ -1179,13 +1216,24 @@ function ligarServicos() {
     botao.disabled = true;
     botao.textContent = "Salvando...";
 
+    // beneficios: cada linha nao vazia vira um item, ate 6
+    const beneficios = $("#srv-beneficios").value
+      .split("\n").map((l) => l.trim()).filter(Boolean).slice(0, 6);
+
+    // slug: preserva o existente ao editar (URL travada); gera na criacao
+    const slug = servicoEmEdicao?.slug || gerarSlug(nome);
+
     try {
       await dados.salvarServico({
         id: servicoEmEdicao?.id,
         nome,
-        descricao: $("#srv-desc").value,
+        slug,
+        descricao: $("#srv-desc").value.trim(),
+        descricaoLonga: $("#srv-desc-longa").value.trim(),
+        beneficios,
         duracaoMin: Number($("#srv-duracao").value),
         precoCentavos: precoDoCampo(),
+        ativo: $("#srv-ativo").checked,
         ordem: servicoEmEdicao?.ordem ?? estado.servicos.length + 1
       });
       fechar("#folha-servico");

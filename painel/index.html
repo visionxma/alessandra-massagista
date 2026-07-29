@@ -40,7 +40,7 @@
   <link rel="apple-touch-icon" href="icons/icone-180.png" />
   <link rel="icon" href="icons/icone-192.png" />
 
-  <link rel="stylesheet" href="css/painel.css" />
+  <link rel="stylesheet" href="css/painel.css?v=5" />
 </head>
 <body>
 
@@ -396,13 +396,29 @@
 
         <form id="form-servico" novalidate>
           <label class="campo">
-            <span class="campo__rotulo">Nome</span>
+            <span class="campo__rotulo">Nome <em>(aparece na LP e no agendamento)</em></span>
             <input type="text" id="srv-nome" required maxlength="60" placeholder="Ex.: Massagem relaxante" />
           </label>
 
+          <label class="campo" id="campo-slug" hidden>
+            <span class="campo__rotulo">URL da página <em>(travada, protege SEO)</em></span>
+            <input type="text" id="srv-slug" readonly />
+            <span class="ajuda">https://alessandramassagista.com/<span id="srv-slug-previa">massagem-nome</span>/</span>
+          </label>
+
           <label class="campo">
-            <span class="campo__rotulo">Descrição <em>(aparece no site)</em></span>
-            <textarea id="srv-desc" rows="2" maxlength="200" placeholder="Uma frase curta sobre o serviço"></textarea>
+            <span class="campo__rotulo">Descrição curta <em>(cards da home e agendamento)</em></span>
+            <textarea id="srv-desc" rows="2" maxlength="200" placeholder="Uma frase de até 200 caracteres"></textarea>
+          </label>
+
+          <label class="campo">
+            <span class="campo__rotulo">Descrição longa <em>(texto principal da página do serviço)</em></span>
+            <textarea id="srv-desc-longa" rows="6" maxlength="2000" placeholder="Parágrafo(s) que explicam o serviço em detalhes. Aparece na página dedicada. Pode ter até 2000 caracteres."></textarea>
+          </label>
+
+          <label class="campo">
+            <span class="campo__rotulo">Benefícios <em>(um por linha, até 6)</em></span>
+            <textarea id="srv-beneficios" rows="4" maxlength="600" placeholder="Ex.:&#10;Alivia tensão nas costas&#10;Melhora a qualidade do sono&#10;Reduz ansiedade"></textarea>
           </label>
 
           <div class="dupla">
@@ -414,14 +430,22 @@
                 <option value="60">1 hora</option>
                 <option value="90">1h30</option>
                 <option value="120">2 horas</option>
+                <option value="150">2h30</option>
+                <option value="180">3 horas</option>
               </select>
             </label>
             <label class="campo">
               <span class="campo__rotulo">Preço em reais</span>
-              <input type="text" id="srv-preco" inputmode="decimal" placeholder="180,00" />
+              <input type="text" id="srv-preco" inputmode="decimal" placeholder="400,00" />
               <span class="previa" id="srv-preco-previa"></span>
             </label>
           </div>
+
+          <label class="campo campo--toggle">
+            <span class="campo__rotulo">Serviço ativo</span>
+            <input type="checkbox" id="srv-ativo" checked />
+            <span class="ajuda">Se desligar, o serviço some da LP e do agendamento. Atendimentos já marcados continuam.</span>
+          </label>
 
           <p class="alerta" id="srv-erro" hidden></p>
 
@@ -548,6 +572,6 @@
 
   <div class="aviso" id="aviso" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="js/painel.js?v=4"></script>
+  <script type="module" src="js/painel.js?v=5"></script>
 </body>
 </html>
