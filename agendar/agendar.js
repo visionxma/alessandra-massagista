@@ -3,8 +3,10 @@
 // Tres passos curtos: servico -> horario -> dados.
 // =====================================================================
 
-import { MODO_DEMO } from "../painel/js/config.js";
-import * as dados from "../painel/js/dados.js";
+// Cache-busting: incrementar a versao em toda mudanca em dados.js/config.js
+// para o navegador buscar o arquivo novo, ignorando cache HTTP e do disco.
+import { MODO_DEMO } from "../painel/js/config.js?v=3";
+import * as dados from "../painel/js/dados.js?v=3";
 
 const $ = (s) => document.querySelector(s);
 const doisDig = (n) => String(n).padStart(2, "0");

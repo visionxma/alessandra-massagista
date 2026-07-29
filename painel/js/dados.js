@@ -6,7 +6,7 @@
 // permite o modo demonstracao offline.
 // =====================================================================
 
-import { firebaseConfig, MODO_DEMO } from "./config.js";
+import { firebaseConfig, MODO_DEMO } from "./config.js?v=3";
 
 const CDN = "https://www.gstatic.com/firebasejs/10.12.2";
 
@@ -700,19 +700,23 @@ export async function lerServicos() {
 // sem editar cada um pelo painel.
 // ---------------------------------------------------------------------
 
-// Preenche precoTexto e descricao a partir do padrao quando faltarem
+// Preenche precoTexto e descricao. Prioridade:
+//   1. Se existe padrao com o mesmo nome, o padrao vence (fonte da
+//      verdade dos precos oficiais). Isso protege contra dados antigos
+//      no banco com precoCentavos desatualizado.
+//   2. Se nao ha padrao (servico novo criado pelo painel), usa o que
+//      esta no banco: precoTexto explicito ou derivado de precoCentavos.
 function normalizarServico(s) {
   const padrao = SERVICOS_PADRAO.find((p) => p.nome === s.nome);
 
-  const precoTexto = s.precoTexto
-    || (s.precoCentavos ? formatarPrecoDeCentavos(s.precoCentavos) : null)
-    || padrao?.precoTexto
-    || "";
+  const precoTexto = padrao?.precoTexto
+    || s.precoTexto
+    || (s.precoCentavos ? formatarPrecoDeCentavos(s.precoCentavos) : "");
 
   return {
     ...s,
     precoTexto,
-    descricao: s.descricao || padrao?.descricao || ""
+    descricao: padrao?.descricao || s.descricao || ""
   };
 }
 
