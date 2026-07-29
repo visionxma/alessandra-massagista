@@ -6,7 +6,7 @@
 // permite o modo demonstracao offline.
 // =====================================================================
 
-import { firebaseConfig, MODO_DEMO } from "./config.js?v=6";
+import { firebaseConfig, MODO_DEMO } from "./config.js?v=7";
 
 const CDN = "https://www.gstatic.com/firebasejs/10.12.2";
 

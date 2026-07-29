@@ -838,9 +838,23 @@ a { color: inherit; text-decoration: none; }
 .footer__zap svg { width: 1.05em; height: 1.05em; color: #25d366; flex-shrink: 0; }
 .footer__zap:hover { color: var(--gold-vivo); }
 
+.footer__insta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  justify-self: end;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--cream);
+  transition: color .25s ease;
+}
+.footer__insta svg { width: 1.1em; height: 1.1em; color: #e1306c; flex-shrink: 0; }
+.footer__insta:hover { color: var(--gold-vivo); }
+
 @media (max-width: 768px) {
   .footer__contato { text-align: center; }
-  .footer__zap { justify-self: center; }
+  .footer__zap,
+  .footer__insta { justify-self: center; }
 }
 
 /* ---------- spa dos pes: bloco escuro de destaque ---------- */
