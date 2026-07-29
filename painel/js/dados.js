@@ -531,11 +531,11 @@ export function observarServicos(callback) {
   return fb.onSnapshot(
     fb.collection(db, "servicos"),
     (snap) => {
-      const lista = snap.docs
+      const doBanco = snap.docs
         .map((d) => ({ id: d.id, ...d.data() }))
         .filter((s) => s.ativo !== false)
         .sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
-      callback(lista.length ? lista : SERVICOS_PADRAO);
+      callback(mesclarComPadrao(doBanco).map(normalizarServico));
     },
     () => callback(SERVICOS_PADRAO)
   );
@@ -681,12 +681,52 @@ export async function lerServicos() {
   try {
     const snap = await fb.getDocs(fb.collection(db, "servicos"));
     if (snap.empty) return SERVICOS_PADRAO;
-    return snap.docs
+    const doBanco = snap.docs
       .map((d) => ({ id: d.id, ...d.data() }))
+      .filter((s) => s.ativo !== false)
       .sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
+    return mesclarComPadrao(doBanco).map(normalizarServico);
   } catch {
     return SERVICOS_PADRAO;
   }
+}
+
+// ---------------------------------------------------------------------
+// Servicos: normalizacao e mesclagem
+//
+// O banco pode nao ter os campos novos (precoTexto, Mix, Casais) porque
+// foi cadastrado antes. Estas duas funcoes garantem que a lista final
+// sempre tenha preco visivel e todos os servicos ofertados hoje, mesmo
+// sem editar cada um pelo painel.
+// ---------------------------------------------------------------------
+
+// Preenche precoTexto e descricao a partir do padrao quando faltarem
+function normalizarServico(s) {
+  const padrao = SERVICOS_PADRAO.find((p) => p.nome === s.nome);
+
+  const precoTexto = s.precoTexto
+    || (s.precoCentavos ? formatarPrecoDeCentavos(s.precoCentavos) : null)
+    || padrao?.precoTexto
+    || "";
+
+  return {
+    ...s,
+    precoTexto,
+    descricao: s.descricao || padrao?.descricao || ""
+  };
+}
+
+// Se o banco nao tiver um servico do padrao (Mix, Casais recentes),
+// injeta ele na lista para o cliente ainda poder agendar.
+function mesclarComPadrao(doBanco) {
+  const nomesNoBanco = new Set(doBanco.map((s) => s.nome));
+  const faltantes = SERVICOS_PADRAO.filter((p) => !nomesNoBanco.has(p.nome));
+  return [...doBanco, ...faltantes];
+}
+
+function formatarPrecoDeCentavos(centavos) {
+  const reais = Math.round(Number(centavos) / 100);
+  return `R$ ${reais}`;
 }
 
 // =====================================================================
@@ -795,7 +835,9 @@ const demo = {
   lerServicosDemo() {
     try {
       const cru = localStorage.getItem(this.CHAVE_SRV);
-      return cru ? JSON.parse(cru) : SERVICOS_PADRAO.map((s, i) => ({ ...s, id: "srv_" + i, ordem: i + 1 }));
+      const lista = cru ? JSON.parse(cru) : SERVICOS_PADRAO.map((s, i) => ({ ...s, id: "srv_" + i, ordem: i + 1 }));
+      // aplica a mesma normalizacao/mesclagem que o modo Firebase usa
+      return mesclarComPadrao(lista).map(normalizarServico);
     } catch { return SERVICOS_PADRAO; }
   },
 
