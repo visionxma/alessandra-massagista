@@ -554,18 +554,79 @@ a { color: inherit; text-decoration: none; }
   .momentos__dica svg { animation: dica-desliza 1.8s ease-in-out infinite; }
 }
 
-.momentos__trilha {
-  display: flex;
-  gap: clamp(0.8rem, 2vw, 1.2rem);
+/* Carrossel: container relativo pras setas se posicionarem sobre a trilha */
+.momentos__carrossel {
+  position: relative;
   max-width: 1240px;
   margin: 0 auto;
+}
+
+.momentos__trilha {
+  display: flex;
+  gap: clamp(0.8rem, 2vw, 1.4rem);
   padding: 0.4rem 1.5rem 1.2rem;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
 .momentos__trilha::-webkit-scrollbar { display: none; }
+
+/* Setas: ocultas por padrao (mobile usa gesto). Aparecem em >=861px. */
+.carrossel__seta {
+  display: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(6px);
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(20, 17, 14, 0.14);
+  transition: transform 0.3s var(--ease), background-color 0.3s ease, opacity 0.3s ease, color 0.3s ease;
+}
+.carrossel__seta svg { width: 22px; height: 22px; display: block; margin: auto; }
+.carrossel__seta:hover {
+  background: var(--ink);
+  color: var(--branco);
+  border-color: var(--ink);
+  transform: translateY(-50%) scale(1.06);
+}
+.carrossel__seta[hidden] { opacity: 0; pointer-events: none; }
+.carrossel__seta--esq { left: 0.7rem; }
+.carrossel__seta--dir { right: 0.7rem; }
+
+/* Dots (indicadores) - visiveis em qualquer tamanho */
+.carrossel__pontos {
+  display: flex;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0.9rem 1.5rem 0;
+  max-width: 1240px;
+  margin: 0 auto;
+}
+.carrossel__ponto {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 0;
+  padding: 0;
+  background: rgba(20, 17, 14, 0.2);
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s var(--ease), width 0.3s var(--ease);
+}
+.carrossel__ponto:hover { background: rgba(20, 17, 14, 0.4); }
+.carrossel__ponto[aria-current="true"] {
+  background: var(--gold-vivo);
+  width: 22px;
+  border-radius: 999px;
+}
 
 .momento {
   position: relative;
@@ -614,11 +675,13 @@ a { color: inherit; text-decoration: none; }
 .momento--video .momento__play svg { width: 26px; height: 26px; margin-left: 3px; }
 .momento--video.is-playing .momento__play { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
 
-/* no desktop os 3 cards ficam centralizados, sem precisar deslizar */
+/* Desktop: mantem o carrossel (nao quebra em wrap), ativa as setas,
+   ajusta o padding pra dar espaco entre elas e a trilha. */
 @media (min-width: 861px) {
-  .momentos__trilha { justify-content: center; flex-wrap: wrap; overflow-x: visible; }
   .momentos__dica { display: none; }
-  .momento { width: min(300px, 28vw); }
+  .momento { width: min(300px, 24vw); }
+  .momentos__trilha { padding: 0.4rem 4.5rem 1.2rem; scroll-padding: 0 4.5rem; }
+  .carrossel__seta { display: grid; place-items: center; }
 }
 
 /* ---------- servicos (bloco preto, 30%) ---------- */

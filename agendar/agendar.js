@@ -5,8 +5,8 @@
 
 // Cache-busting: incrementar a versao em toda mudanca em dados.js/config.js
 // para o navegador buscar o arquivo novo, ignorando cache HTTP e do disco.
-import { MODO_DEMO } from "../painel/js/config.js?v=8";
-import * as dados from "../painel/js/dados.js?v=8";
+import { MODO_DEMO } from "../painel/js/config.js?v=9";
+import * as dados from "../painel/js/dados.js?v=9";
 
 const $ = (s) => document.querySelector(s);
 const doisDig = (n) => String(n).padStart(2, "0");

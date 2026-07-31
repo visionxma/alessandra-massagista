@@ -56,7 +56,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/styles.css?v=8" />
+  <link rel="stylesheet" href="css/styles.css?v=9" />
 
   <script type="application/ld+json">
   {
@@ -433,46 +433,58 @@
         </p>
       </div>
 
-      <div class="momentos__trilha">
-        <figure class="momento reveal">
-          <img src="assets/img/momento-1.jpg" width="720" height="1280" loading="lazy" decoding="async"
-               alt="Alessandra, massagista em Belo Horizonte, em um momento pessoal fora da maca" />
-        </figure>
+      <div class="momentos__carrossel">
+        <button type="button" class="carrossel__seta carrossel__seta--esq" id="carrossel-esq" aria-label="Anterior" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6"/></svg>
+        </button>
 
-        <figure class="momento momento--video reveal">
-          <video src="assets/video/momento.mp4" poster="assets/video/momento-poster.jpg"
-                 preload="metadata" playsinline controls
-                 width="480" height="848" aria-label="Vídeo de Alessandra, massagista no Carlos Prates, Belo Horizonte"></video>
-          <span class="momento__play" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
-          </span>
-        </figure>
+        <div class="momentos__trilha" id="momentos-trilha">
+          <figure class="momento reveal">
+            <img src="assets/img/momento-1.jpg" width="720" height="1280" loading="lazy" decoding="async"
+                 alt="Alessandra, massagista em Belo Horizonte, em um momento pessoal fora da maca" />
+          </figure>
 
-        <figure class="momento reveal">
-          <img src="assets/img/momento-2.jpg" width="720" height="1280" loading="lazy" decoding="async"
-               alt="Alessandra, massagista feminina em BH, em momento descontraído" />
-        </figure>
+          <figure class="momento momento--video reveal">
+            <video src="assets/video/momento.mp4" poster="assets/video/momento-poster.jpg"
+                   preload="metadata" playsinline controls
+                   width="480" height="848" aria-label="Vídeo de Alessandra, massagista no Carlos Prates, Belo Horizonte"></video>
+            <span class="momento__play" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
+            </span>
+          </figure>
 
-        <figure class="momento reveal">
-          <img src="assets/img/momento-3.jpg" width="720" height="1280" loading="lazy" decoding="async"
-               alt="Alessandra, massagista em Belo Horizonte" />
-        </figure>
+          <figure class="momento reveal">
+            <img src="assets/img/momento-2.jpg" width="720" height="1280" loading="lazy" decoding="async"
+                 alt="Alessandra, massagista feminina em BH, em momento descontraído" />
+          </figure>
 
-        <figure class="momento reveal">
-          <img src="assets/img/momento-4.jpg" width="720" height="1280" loading="lazy" decoding="async"
-               alt="Alessandra, massagista no Carlos Prates" />
-        </figure>
+          <figure class="momento reveal">
+            <img src="assets/img/momento-3.jpg" width="720" height="1280" loading="lazy" decoding="async"
+                 alt="Alessandra, massagista em Belo Horizonte" />
+          </figure>
 
-        <figure class="momento reveal">
-          <img src="assets/img/momento-5.jpg" width="720" height="1280" loading="lazy" decoding="async"
-               alt="Alessandra, massagista premium em BH" />
-        </figure>
+          <figure class="momento reveal">
+            <img src="assets/img/momento-4.jpg" width="720" height="1280" loading="lazy" decoding="async"
+                 alt="Alessandra, massagista no Carlos Prates" />
+          </figure>
 
-        <figure class="momento reveal">
-          <img src="assets/img/momento-6.jpg" width="720" height="1280" loading="lazy" decoding="async"
-               alt="Alessandra em ambiente descontraído, massagista em Belo Horizonte" />
-        </figure>
+          <figure class="momento reveal">
+            <img src="assets/img/momento-5.jpg" width="720" height="1280" loading="lazy" decoding="async"
+                 alt="Alessandra, massagista premium em BH" />
+          </figure>
+
+          <figure class="momento reveal">
+            <img src="assets/img/momento-6.jpg" width="720" height="1280" loading="lazy" decoding="async"
+                 alt="Alessandra em ambiente descontraído, massagista em Belo Horizonte" />
+          </figure>
+        </div>
+
+        <button type="button" class="carrossel__seta carrossel__seta--dir" id="carrossel-dir" aria-label="Próximo">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6"/></svg>
+        </button>
       </div>
+
+      <div class="carrossel__pontos" id="carrossel-pontos" aria-label="Navegação por indicadores"></div>
     </section>
 
     <!-- ======= SERVICOS ======= -->
@@ -860,6 +872,6 @@
   <a class="wa-float" href="https://wa.me/5535999140183?text=Ol%C3%A1%2C%20Alessandra.%20Vim%20pelo%20site%20e%20gostaria%20de%20tirar%20uma%20d%C3%BAvida." target="_blank" rel="noopener nofollow" aria-label="Conversar no WhatsApp"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38c1.45.79 3.08 1.21 4.79 1.21h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2Zm0 1.8c2.16 0 4.19.84 5.72 2.37a8.06 8.06 0 0 1 2.37 5.72c0 4.47-3.64 8.11-8.11 8.11-1.53 0-3.02-.43-4.31-1.24l-.31-.19-3.11.82.83-3.03-.2-.32a8.05 8.05 0 0 1-1.24-4.28c0-4.47 3.64-8.11 8.11-8.11Zm-2.68 4.03c-.15 0-.4.06-.6.28-.21.22-.79.77-.79 1.88s.81 2.18.92 2.33c.11.15 1.6 2.44 3.87 3.42.54.23.96.37 1.29.48.54.17 1.03.15 1.42.09.43-.06 1.33-.54 1.52-1.07.19-.53.19-.98.13-1.07-.06-.09-.21-.15-.44-.26-.23-.11-1.33-.66-1.54-.73-.21-.08-.36-.11-.51.11-.15.22-.58.73-.71.88-.13.15-.26.17-.49.06-.23-.11-.96-.35-1.83-1.13-.68-.6-1.13-1.35-1.27-1.57-.13-.22-.01-.34.1-.45.1-.1.23-.26.34-.39.11-.13.15-.22.23-.37.08-.15.04-.28-.02-.39-.06-.11-.51-1.23-.7-1.68-.18-.44-.37-.38-.51-.39-.13-.01-.28-.01-.43-.01Z"/></svg>
   </a>
 
-  <script src="js/main.js" defer></script>
+  <script src="js/main.js?v=9" defer></script>
 </body>
 </html>

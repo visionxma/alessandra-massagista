@@ -85,3 +85,87 @@ document.querySelectorAll(".momento--video video").forEach((video) => {
   video.addEventListener("ended", () => card.classList.remove("is-playing"));
 });
 
+/* ---------- carrossel Momentos ----------
+   Setas navegam por card (1 por clique). Dots refletem o card mais
+   visivel no viewport da trilha. O scroll manual (arrastar/deslizar)
+   ja funciona nativamente via CSS scroll-snap; aqui so orquestramos
+   setas + indicadores. */
+
+(function inicializarCarrosselMomentos() {
+  const trilha = document.getElementById("momentos-trilha");
+  if (!trilha) return;
+
+  const cards = [...trilha.querySelectorAll(".momento")];
+  const setaEsq = document.getElementById("carrossel-esq");
+  const setaDir = document.getElementById("carrossel-dir");
+  const containerPontos = document.getElementById("carrossel-pontos");
+
+  if (!cards.length) return;
+
+  // monta os dots (um por card)
+  cards.forEach((_, i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "carrossel__ponto";
+    b.setAttribute("aria-label", `Ir para foto ${i + 1}`);
+    b.dataset.i = String(i);
+    if (i === 0) b.setAttribute("aria-current", "true");
+    containerPontos.appendChild(b);
+  });
+  const pontos = [...containerPontos.querySelectorAll(".carrossel__ponto")];
+
+  // rola ate o card `i` centralizando (block: nearest evita rolar a pagina)
+  function irPara(i) {
+    const alvo = cards[Math.max(0, Math.min(cards.length - 1, i))];
+    if (!alvo) return;
+    alvo.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  }
+
+  // devolve o indice do card mais proximo do centro da trilha
+  function cardAtivo() {
+    const centroTrilha = trilha.scrollLeft + trilha.clientWidth / 2;
+    let melhor = 0, menorDist = Infinity;
+    cards.forEach((c, i) => {
+      const centro = c.offsetLeft + c.offsetWidth / 2;
+      const d = Math.abs(centro - centroTrilha);
+      if (d < menorDist) { menorDist = d; melhor = i; }
+    });
+    return melhor;
+  }
+
+  // atualiza dot ativo + habilita/desabilita setas nas extremidades
+  function sincronizar() {
+    const atual = cardAtivo();
+    pontos.forEach((p, i) => {
+      if (i === atual) p.setAttribute("aria-current", "true");
+      else p.removeAttribute("aria-current");
+    });
+    if (setaEsq) setaEsq.hidden = atual === 0;
+    if (setaDir) setaDir.hidden = atual === cards.length - 1;
+  }
+
+  // debounce simples pra nao rodar sincronizar() a cada pixel de scroll
+  let raf = null;
+  trilha.addEventListener("scroll", () => {
+    if (raf) return;
+    raf = requestAnimationFrame(() => { sincronizar(); raf = null; });
+  }, { passive: true });
+
+  setaEsq?.addEventListener("click", () => irPara(cardAtivo() - 1));
+  setaDir?.addEventListener("click", () => irPara(cardAtivo() + 1));
+
+  containerPontos.addEventListener("click", (e) => {
+    const b = e.target.closest(".carrossel__ponto");
+    if (b) irPara(Number(b.dataset.i));
+  });
+
+  // teclado: setas navegam quando o carrossel esta em foco
+  trilha.setAttribute("tabindex", "0");
+  trilha.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowLeft") { e.preventDefault(); irPara(cardAtivo() - 1); }
+    if (e.key === "ArrowRight") { e.preventDefault(); irPara(cardAtivo() + 1); }
+  });
+
+  sincronizar();
+})();
+
