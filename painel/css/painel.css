@@ -463,6 +463,97 @@ button { background: none; border: 0; cursor: pointer; }
 }
 .ajuste-texto--sep { margin-top: 1.3rem; padding-top: 1.1rem; border-top: 1px solid var(--linha); }
 
+/* ============ Ajuda e suporte (accordion) ============ */
+.ajuda {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.ajuda__item {
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-m);
+  overflow: hidden;
+  transition: border-color 0.25s ease;
+}
+.ajuda__item[open] {
+  border-color: rgba(154, 106, 38, 0.4);
+}
+
+.ajuda__item summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 0.95rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-family: var(--display);
+  font-size: 0.98rem;
+  color: var(--texto-1);
+  user-select: none;
+}
+.ajuda__item summary::-webkit-details-marker { display: none; }
+.ajuda__item summary::marker { content: ""; }
+
+.ajuda__icone {
+  font-size: 1.15rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.ajuda__item summary > span:nth-child(2) {
+  flex: 1;
+  line-height: 1.3;
+}
+
+.ajuda__chevron {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--texto-3);
+  transition: transform 0.25s var(--mola);
+}
+.ajuda__item[open] .ajuda__chevron {
+  transform: rotate(180deg);
+  color: var(--ouro);
+}
+
+.ajuda__corpo {
+  padding: 0 1rem 1rem;
+  color: var(--texto-2);
+  font-size: 0.88rem;
+  line-height: 1.6;
+  border-top: 1px dashed var(--linha);
+  margin-top: -0.15rem;
+  padding-top: 0.9rem;
+}
+.ajuda__corpo p { margin: 0 0 0.7rem; }
+.ajuda__corpo p:last-child { margin-bottom: 0; }
+.ajuda__corpo strong { color: var(--texto-1); font-weight: 600; }
+.ajuda__corpo ul,
+.ajuda__corpo ol {
+  margin: 0 0 0.7rem;
+  padding-left: 1.3rem;
+}
+.ajuda__corpo li { margin-bottom: 0.35rem; }
+.ajuda__corpo li:last-child { margin-bottom: 0; }
+
+.ajuda__subtitulo {
+  font-weight: 600;
+  color: var(--texto-1);
+  margin-top: 1rem !important;
+  margin-bottom: 0.4rem !important;
+  font-size: 0.9rem;
+}
+
+.ajuda__aviso {
+  margin-top: 0.8rem !important;
+  padding: 0.65rem 0.85rem;
+  background: rgba(154, 106, 38, 0.08);
+  border-left: 3px solid var(--ouro);
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
 .evento-linha {
   display: flex;
   align-items: baseline;

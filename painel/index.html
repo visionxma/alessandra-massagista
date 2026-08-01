@@ -40,7 +40,7 @@
   <link rel="apple-touch-icon" href="icons/icone-180.png" />
   <link rel="icon" href="icons/icone-192.png" />
 
-  <link rel="stylesheet" href="css/painel.css?v=9" />
+  <link rel="stylesheet" href="css/painel.css?v=10" />
 </head>
 <body>
 
@@ -282,6 +282,185 @@
           <button class="btn btn--neutro btn--bloco" id="btn-backup">Baixar backup (.json)</button>
           <p class="ajuste-texto ajuste-texto--sep">Ver os últimos acessos e alterações da conta.</p>
           <button class="btn btn--neutro btn--bloco" id="btn-auditoria">Registro de atividades</button>
+        </div>
+
+        <!-- ============ AJUDA E SUPORTE ============ -->
+        <h2 class="secao-titulo">Ajuda e suporte</h2>
+        <div class="ajuda">
+
+          <details class="ajuda__item">
+            <summary>
+              <span class="ajuda__icone" aria-hidden="true">📸</span>
+              <span>Fotos do Google Maps: só você pode trocar</span>
+              <svg class="ajuda__chevron" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <div class="ajuda__corpo">
+              <p><strong>Importante:</strong> as fotos que aparecem quando alguém pesquisa sua massagem no Google (aquele card que aparece com sua nota, endereço e imagens) <strong>não vêm do site</strong>. Vêm do <strong>Perfil da Empresa do Google</strong> (Google Business Profile) — que é uma conta separada.</p>
+              <p>Por isso, quando você quiser trocar essas fotos, <strong>só você pode fazer</strong> — pelo seu celular, com seu login do Google. Ninguém consegue mexer por você (por segurança).</p>
+
+              <p class="ajuda__subtitulo">Passo a passo (pelo celular):</p>
+              <ol>
+                <li>Abra o navegador (Chrome) e digite: <strong>business.google.com</strong></li>
+                <li>Faça login com a mesma conta Google que você cadastrou o negócio</li>
+                <li>Toque em <strong>"Alessandra Massagista"</strong> na lista</li>
+                <li>No menu, toque em <strong>"Fotos"</strong></li>
+                <li>Toque no <strong>+</strong> ou em <strong>"Adicionar fotos"</strong></li>
+                <li>Escolha as fotos que quer subir</li>
+              </ol>
+
+              <p class="ajuda__subtitulo">Como definir a foto principal (capa):</p>
+              <ol>
+                <li>Ainda em "Fotos", toque na foto desejada</li>
+                <li>Toque nos <strong>3 pontinhos</strong> (⋮) no canto</li>
+                <li>Escolha <strong>"Definir como foto de capa"</strong></li>
+              </ol>
+
+              <p class="ajuda__aviso">⚠️ O Google pode demorar <strong>até 48h</strong> para atualizar a foto de capa nas pesquisas. Se não trocar na hora, é normal — aguarde 2 dias.</p>
+            </div>
+          </details>
+
+          <details class="ajuda__item">
+            <summary>
+              <span class="ajuda__icone" aria-hidden="true">📅</span>
+              <span>Como funciona a agenda do dia</span>
+              <svg class="ajuda__chevron" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <div class="ajuda__corpo">
+              <p>A aba <strong>"Hoje"</strong> mostra os atendimentos do dia atual e dos próximos dias.</p>
+              <ul>
+                <li><strong>Pendente</strong>: cliente marcou pelo site, ainda não foi confirmado por você.</li>
+                <li><strong>Confirmado</strong>: você já confirmou com o cliente.</li>
+                <li><strong>Concluído</strong>: atendimento realizado (o valor entra no faturamento).</li>
+                <li><strong>Cancelado</strong>: liberou o horário automaticamente.</li>
+              </ul>
+              <p>Para mudar o status, toque no cartão do atendimento e escolha a nova situação.</p>
+            </div>
+          </details>
+
+          <details class="ajuda__item">
+            <summary>
+              <span class="ajuda__icone" aria-hidden="true">💰</span>
+              <span>Onde vejo quanto faturei</span>
+              <svg class="ajuda__chevron" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <div class="ajuda__corpo">
+              <p>Aba <strong>"Financeiro"</strong>. Você pode ver por <strong>Hoje</strong>, <strong>Semana</strong> ou <strong>Mês</strong>.</p>
+              <p>O total mostra apenas os atendimentos <strong>concluídos</strong>. Os que estão pendentes ou confirmados aparecem como "a realizar" (não somam ao total ainda).</p>
+              <p>Para ver períodos anteriores, use o botão <strong>"Ver mais N meses"</strong> no final da tela.</p>
+            </div>
+          </details>
+
+          <details class="ajuda__item">
+            <summary>
+              <span class="ajuda__icone" aria-hidden="true">💆</span>
+              <span>Adicionar, editar ou remover serviços</span>
+              <svg class="ajuda__chevron" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <div class="ajuda__corpo">
+              <p>Aba <strong>Ajustes</strong> → seção <strong>"Serviços e preços"</strong>.</p>
+              <ul>
+                <li><strong>Adicionar:</strong> toque em "Adicionar" e preencha nome, descrição, duração e preço.</li>
+                <li><strong>Editar:</strong> toque em qualquer serviço da lista.</li>
+                <li><strong>Remover:</strong> toque no serviço → "Mover para lixeira". O serviço some do site mas fica na lixeira para restauração.</li>
+                <li><strong>Ativar/desativar:</strong> no formulário do serviço, use o botão "Serviço ativo". Se desligar, ele some do site sem ir pra lixeira.</li>
+              </ul>
+              <p class="ajuda__aviso">⚠️ Ao editar o <strong>nome</strong> do serviço, a URL da página no site (ex: /massagem-relaxante/) <strong>não muda</strong> — isso protege o ranking do Google.</p>
+            </div>
+          </details>
+
+          <details class="ajuda__item">
+            <summary>
+              <span class="ajuda__icone" aria-hidden="true">🗑️</span>
+              <span>Recuperar um serviço da lixeira</span>
+              <svg class="ajuda__chevron" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <div class="ajuda__corpo">
+              <p>Aba <strong>Ajustes</strong> → seção "Serviços e preços" → botão <strong>"Lixeira"</strong> (o contador dourado mostra quantos itens estão lá).</p>
+              <p>Cada item tem duas opções:</p>
+              <ul>
+                <li><strong>Restaurar</strong>: volta a aparecer no site e no agendamento.</li>
+                <li><strong>Excluir permanente</strong>: apaga do banco de vez (irreversível).</li>
+              </ul>
+            </div>
+          </details>
+
+          <details class="ajuda__item">
+            <summary>
+              <span class="ajuda__icone" aria-hidden="true">🚫</span>
+              <span>Bloquear um dia ou horário</span>
+              <svg class="ajuda__chevron" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <div class="ajuda__corpo">
+              <p>Aba <strong>"Agenda"</strong> → toque no dia desejado → botão <strong>"Bloquear"</strong>.</p>
+              <p>Você pode bloquear o <strong>dia inteiro</strong> ou apenas uma <strong>faixa</strong> (ex: das 12h às 14h para almoço). O motivo é opcional e só você vê.</p>
+              <p>Enquanto bloqueado, o cliente não consegue agendar naquele horário pelo site.</p>
+            </div>
+          </details>
+
+          <details class="ajuda__item">
+            <summary>
+              <span class="ajuda__icone" aria-hidden="true">⏰</span>
+              <span>Alterar horário de funcionamento</span>
+              <svg class="ajuda__chevron" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <div class="ajuda__corpo">
+              <p>Aba <strong>Ajustes</strong> → primeira seção <strong>"Horário de funcionamento"</strong>.</p>
+              <p>Você define hora de abertura, fechamento, intervalo entre atendimentos e antecedência mínima. O site respeita imediatamente.</p>
+            </div>
+          </details>
+
+          <details class="ajuda__item">
+            <summary>
+              <span class="ajuda__icone" aria-hidden="true">🔔</span>
+              <span>Ativar avisos de novo agendamento</span>
+              <svg class="ajuda__chevron" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <div class="ajuda__corpo">
+              <p>Toque no <strong>sininho</strong> (canto superior direito). Quando alguém marcar um horário pelo site, aparece um ponto dourado no sino.</p>
+              <p>Se o painel estiver aberto no navegador, você recebe o aviso na tela. Se estiver fechado, você vê ao abrir de novo.</p>
+            </div>
+          </details>
+
+          <details class="ajuda__item">
+            <summary>
+              <span class="ajuda__icone" aria-hidden="true">💾</span>
+              <span>Fazer backup dos dados</span>
+              <svg class="ajuda__chevron" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <div class="ajuda__corpo">
+              <p>Aba Ajustes → <strong>"Baixar backup (.json)"</strong>. Um arquivo com toda a sua agenda é baixado.</p>
+              <p>Recomendação: fazer backup <strong>1 vez por mês</strong> e guardar em local seguro (Google Drive, e-mail para si mesma, etc).</p>
+            </div>
+          </details>
+
+          <details class="ajuda__item">
+            <summary>
+              <span class="ajuda__icone" aria-hidden="true">🔒</span>
+              <span>Trocar minha senha</span>
+              <svg class="ajuda__chevron" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <div class="ajuda__corpo">
+              <p>Sua senha é gerenciada pelo Firebase (autenticação segura). Para trocar, entre em contato com quem administra seu sistema — não é possível alterar direto pelo painel por questão de segurança.</p>
+            </div>
+          </details>
+
+          <details class="ajuda__item">
+            <summary>
+              <span class="ajuda__icone" aria-hidden="true">❓</span>
+              <span>Ainda com dúvida?</span>
+              <svg class="ajuda__chevron" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <div class="ajuda__corpo">
+              <p>Entre em contato com o suporte técnico responsável pelo seu sistema.</p>
+              <p class="ajuda__subtitulo">Antes de pedir ajuda, tenha em mãos:</p>
+              <ul>
+                <li>O que você estava tentando fazer</li>
+                <li>O que aconteceu (mensagem de erro, se houver)</li>
+                <li>Uma captura de tela ajuda muito</li>
+              </ul>
+            </div>
+          </details>
+
         </div>
       </section>
 
@@ -593,6 +772,6 @@
 
   <div class="aviso" id="aviso" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="js/painel.js?v=9"></script>
+  <script type="module" src="js/painel.js?v=10"></script>
 </body>
 </html>
