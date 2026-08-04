@@ -4,8 +4,8 @@
 
 // Cache-busting: incrementar a versao em toda mudanca em dados.js/config.js
 // para o navegador buscar o arquivo novo, ignorando cache HTTP e do disco.
-import { MODO_DEMO } from "./config.js?v=12";
-import * as dados from "./dados.js?v=12";
+import { MODO_DEMO } from "./config.js?v=13";
+import * as dados from "./dados.js?v=13";
 
 // ---------------------------------------------------------------------
 // Atalhos e utilitarios

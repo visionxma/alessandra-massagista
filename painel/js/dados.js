@@ -6,7 +6,7 @@
 // permite o modo demonstracao offline.
 // =====================================================================
 
-import { firebaseConfig, MODO_DEMO } from "./config.js?v=12";
+import { firebaseConfig, MODO_DEMO } from "./config.js?v=13";
 
 const CDN = "https://www.gstatic.com/firebasejs/10.12.2";
 
@@ -337,12 +337,16 @@ export function observarOcupados(deData, ateData, callback) {
 // ---------------------------------------------------------------------
 
 const CHAVE_ULTIMO_CLEANUP = "ocupados_cleanup_ultimo";
-// v4: corrige uma unica vez o preco legado (R$ 180/220/250) para o
-// valor oficial do SERVICOS_PADRAO, apaga precoTexto (campo legado que
-// o painel novo nao usa: fonte da verdade eh precoCentavos), e garante
-// slug/ativo/descricaoLonga/beneficios. Depois disso, a dona pode
-// editar precos livremente pelo painel sem trava.
-const CHAVE_MIGRACAO_SERVICOS = "servicos_migracao_v4_aplicada";
+// v5: NUNCA sobrescreve o preco de um servico que ja foi editado pela
+// dona. So corrige os precos legados conhecidos (R$ 130/180/190/220/250)
+// que sobraram do cadastro antigo, e apaga precoTexto legado. Depois
+// disso, a dona edita a vontade e o valor jamais eh revertido.
+const CHAVE_MIGRACAO_SERVICOS = "servicos_migracao_v5_aplicada";
+
+// Precos legados conhecidos (em centavos) que a migracao pode corrigir
+// para o valor do padrao. Qualquer valor fora desta lista eh respeitado
+// como escolha explicita da dona e nunca eh tocado pela migracao.
+const PRECOS_LEGADOS_CENTAVOS = new Set([13000, 18000, 19000, 22000, 25000]);
 const DIAS_MANTER_OCUPADOS = 60;
 
 // Migracao unica dos servicos legados: adiciona slug, ativo=true, e
@@ -385,18 +389,17 @@ export async function migrarServicosSePreciso() {
         patch.ativo = true;
       }
 
-      // preco: se ha padrao com precoTexto oficial e o atual esta
-      // diferente, atualiza pro oficial (corrige os R$ 180/220/250 etc)
-      if (padrao?.precoTexto) {
+      // preco: SO corrige se o valor atual for um preco legado
+      // conhecido (R$ 130/180/190/220/250). Qualquer outro valor eh
+      // uma edicao explicita da dona e nunca eh sobrescrito.
+      if (padrao?.precoTexto && PRECOS_LEGADOS_CENTAVOS.has(atual.precoCentavos)) {
         const centavosPadrao = centavosDoTexto(padrao.precoTexto);
-        if (centavosPadrao && atual.precoCentavos !== centavosPadrao) {
-          patch.precoCentavos = centavosPadrao;
-        }
-        // precoTexto legado gravado no banco: apaga. A fonte da verdade
-        // eh o SERVICOS_PADRAO no codigo (normalizarServico ja aplica).
-        if (atual.precoTexto !== undefined) {
-          patch.precoTexto = fb.deleteField();
-        }
+        if (centavosPadrao) patch.precoCentavos = centavosPadrao;
+      }
+      // precoTexto legado gravado no banco: apaga sempre. A fonte da
+      // verdade eh precoCentavos; precoTexto so cria conflito.
+      if (atual.precoTexto !== undefined) {
+        patch.precoTexto = fb.deleteField();
       }
 
       // descricaoLonga e beneficios: comeca vazio, dono preenche
