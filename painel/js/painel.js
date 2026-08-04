@@ -4,8 +4,8 @@
 
 // Cache-busting: incrementar a versao em toda mudanca em dados.js/config.js
 // para o navegador buscar o arquivo novo, ignorando cache HTTP e do disco.
-import { MODO_DEMO } from "./config.js?v=11";
-import * as dados from "./dados.js?v=11";
+import { MODO_DEMO } from "./config.js?v=12";
+import * as dados from "./dados.js?v=12";
 
 // ---------------------------------------------------------------------
 // Atalhos e utilitarios
@@ -1207,12 +1207,25 @@ function ligarServicos() {
     const botao = $("#btn-salvar-srv");
     erro.hidden = true;
 
+    // Validacao forte: rejeita salvar se qualquer campo estiver fora dos
+    // limites seguros. Objetivo: nunca deixar o agendamento receber um
+    // servico com preco absurdo, duracao invalida ou nome em branco.
     const nome = $("#srv-nome").value.trim();
-    if (nome.length < 2) {
-      erro.textContent = "Dê um nome ao serviço.";
+    const precoCentavos = precoDoCampo();
+    const duracaoMin = Number($("#srv-duracao").value);
+
+    const mostrarErro = (msg) => {
+      erro.textContent = msg;
       erro.hidden = false;
-      return;
-    }
+      erro.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    };
+
+    if (nome.length < 2) return mostrarErro("Dê um nome ao serviço (mínimo 2 letras).");
+    if (nome.length > 60) return mostrarErro("Nome muito longo (máximo 60 letras).");
+    if (!precoCentavos || precoCentavos < 5000) return mostrarErro("Preço mínimo: R$ 50,00.");
+    if (precoCentavos > 500000) return mostrarErro("Preço máximo: R$ 5.000,00.");
+    if (!Number.isFinite(duracaoMin) || duracaoMin < 30) return mostrarErro("Duração mínima: 30 minutos.");
+    if (duracaoMin > 240) return mostrarErro("Duração máxima: 240 minutos (4 horas).");
 
     botao.disabled = true;
     botao.textContent = "Salvando...";
@@ -1232,16 +1245,21 @@ function ligarServicos() {
         descricao: $("#srv-desc").value.trim(),
         descricaoLonga: $("#srv-desc-longa").value.trim(),
         beneficios,
-        duracaoMin: Number($("#srv-duracao").value),
-        precoCentavos: precoDoCampo(),
+        duracaoMin,
+        precoCentavos,
         ativo: $("#srv-ativo").checked,
         ordem: servicoEmEdicao?.ordem ?? estado.servicos.length + 1
       });
       fechar("#folha-servico");
       avisar(servicoEmEdicao ? "Serviço atualizado" : "Serviço criado", "bom");
-    } catch {
-      erro.textContent = "Não foi possível salvar. Tente de novo.";
-      erro.hidden = false;
+    } catch (err) {
+      const codigo = String(err?.message || "");
+      const mensagens = {
+        SERVICO_NOME_INVALIDO: "Nome inválido. Use entre 2 e 60 letras.",
+        SERVICO_PRECO_INVALIDO: "Preço fora do permitido. Use entre R$ 50 e R$ 5.000.",
+        SERVICO_DURACAO_INVALIDA: "Duração fora do permitido. Use entre 30 e 240 minutos."
+      };
+      mostrarErro(mensagens[codigo] || "Não foi possível salvar. Tente de novo.");
     } finally {
       botao.disabled = false;
       botao.textContent = "Salvar";

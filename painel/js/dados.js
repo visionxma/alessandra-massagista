@@ -6,7 +6,7 @@
 // permite o modo demonstracao offline.
 // =====================================================================
 
-import { firebaseConfig, MODO_DEMO } from "./config.js?v=11";
+import { firebaseConfig, MODO_DEMO } from "./config.js?v=12";
 
 const CDN = "https://www.gstatic.com/firebasejs/10.12.2";
 
@@ -337,11 +337,12 @@ export function observarOcupados(deData, ateData, callback) {
 // ---------------------------------------------------------------------
 
 const CHAVE_ULTIMO_CLEANUP = "ocupados_cleanup_ultimo";
-// v3: bump depois de identificar que o banco tinha precoTexto legado
-// (R$ 250/220/180...) vencendo o padrao no agendamento. A v3 corrige
-// precoCentavos E apaga precoTexto legado dos servicos que existem no
-// SERVICOS_PADRAO. Todo navegador autenticado roda a v3 uma vez.
-const CHAVE_MIGRACAO_SERVICOS = "servicos_migracao_v3_aplicada";
+// v4: corrige uma unica vez o preco legado (R$ 180/220/250) para o
+// valor oficial do SERVICOS_PADRAO, apaga precoTexto (campo legado que
+// o painel novo nao usa: fonte da verdade eh precoCentavos), e garante
+// slug/ativo/descricaoLonga/beneficios. Depois disso, a dona pode
+// editar precos livremente pelo painel sem trava.
+const CHAVE_MIGRACAO_SERVICOS = "servicos_migracao_v4_aplicada";
 const DIAS_MANTER_OCUPADOS = 60;
 
 // Migracao unica dos servicos legados: adiciona slug, ativo=true, e
@@ -661,18 +662,35 @@ export function observarLixeira(callback) {
 export async function salvarServico(servico) {
   if (MODO_DEMO) return demo.salvarServico(servico);
 
+  // Defesa em profundidade: valida de novo aqui mesmo com o form ja
+  // validando. Se algum caminho futuro chamar salvarServico direto,
+  // ainda assim o banco nunca recebe lixo.
+  const nome = String(servico.nome || "").trim();
+  const precoCentavos = Number(servico.precoCentavos) || 0;
+  const duracaoMin = Number(servico.duracaoMin) || 0;
+
+  if (nome.length < 2 || nome.length > 60) {
+    throw new Error("SERVICO_NOME_INVALIDO");
+  }
+  if (precoCentavos < 5000 || precoCentavos > 500000) {
+    throw new Error("SERVICO_PRECO_INVALIDO");
+  }
+  if (duracaoMin < 30 || duracaoMin > 240) {
+    throw new Error("SERVICO_DURACAO_INVALIDA");
+  }
+
   const dados = {
-    nome: servico.nome.trim(),
+    nome,
     // slug travado: gerado uma vez na criacao, nunca alterado depois.
     // Protege as URLs ja indexadas pelo Google.
     slug: (servico.slug || "").trim(),
-    descricao: (servico.descricao || "").trim(),
-    descricaoLonga: (servico.descricaoLonga || "").trim(),
+    descricao: (servico.descricao || "").trim().slice(0, 200),
+    descricaoLonga: (servico.descricaoLonga || "").trim().slice(0, 2000),
     beneficios: Array.isArray(servico.beneficios)
-      ? servico.beneficios.map((b) => String(b).trim()).filter(Boolean).slice(0, 6)
+      ? servico.beneficios.map((b) => String(b).trim().slice(0, 100)).filter(Boolean).slice(0, 6)
       : [],
-    duracaoMin: Number(servico.duracaoMin) || 60,
-    precoCentavos: Number(servico.precoCentavos) || 0,
+    duracaoMin,
+    precoCentavos,
     ordem: Number(servico.ordem) || 99,
     ativo: servico.ativo !== false,
     atualizadoEm: fb.serverTimestamp()
@@ -865,25 +883,27 @@ export async function lerServicos() {
 //      no banco com precoCentavos desatualizado.
 //   2. Se nao ha padrao (servico novo criado pelo painel), usa o que
 //      esta no banco: precoTexto explicito ou derivado de precoCentavos.
-// Preenche precoTexto e descricao. Prioridade:
-//   1. Se o nome bate com um servico do SERVICOS_PADRAO, o padrao vence
-//      (fonte da verdade dos precos oficiais). Blindagem contra docs
-//      antigos no banco com preco desatualizado (R$ 180/220/250 legados)
-//      que o site raiz e as LPs individuais ja mostram atualizados.
-//   2. Servico criado pela dona no painel (sem correspondencia no padrao):
-//      usa o que esta no banco, precoTexto explicito ou derivado dos centavos.
+// Prepara um servico do banco para exibicao no agendamento. A dona
+// edita 100% pelo painel; o padrao so serve de rede de seguranca quando
+// o banco esta incompleto (servico faltando, preco ou descricao vazios).
+//
+// Regra de fallback (ordem de precedencia, do que vale primeiro):
+//   precoTexto -> banco -> centavos formatados -> padrao pelo nome -> vazio
+//   descricao  -> banco -> padrao pelo nome -> vazio
+//
+// Se nada existir e nao houver padrao para cair, o agendamento mostra o
+// servico sem preco (o resumo omite a linha do valor). Nunca quebra a UI.
 // Servicos com ativo=false sao filtrados fora ANTES de chegar aqui.
 function normalizarServico(s) {
   const padrao = SERVICOS_PADRAO.find((p) => p.nome === s.nome);
 
-  const precoTexto = padrao?.precoTexto
-    || s.precoTexto
+  const precoTexto = s.precoTexto
     || (s.precoCentavos ? formatarPrecoDeCentavos(s.precoCentavos) : null)
+    || padrao?.precoTexto
     || "";
 
-  const precoCentavos = padrao?.precoTexto
-    ? centavosDoTexto(padrao.precoTexto)
-    : (s.precoCentavos || 0);
+  const precoCentavos = s.precoCentavos
+    || (padrao?.precoTexto ? centavosDoTexto(padrao.precoTexto) : 0);
 
   return {
     ...s,

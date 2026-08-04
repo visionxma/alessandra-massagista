@@ -66,17 +66,32 @@ service cloud.firestore {
     // -----------------------------------------------------------------
     // servicos: leitura publica (o site e a home montam a lista).
     // Escrita so autenticada e com campos validados.
+    //
+    // Campos permitidos (whitelist):
+    //   nome, descricao, descricaoLonga, beneficios, duracaoMin,
+    //   precoCentavos, ordem, ativo, slug, atualizadoEm, excluidoEm
+    //
+    // Limites de negocio (defesa em profundidade - o painel ja valida):
+    //   nome:          2-60 chars, sem HTML
+    //   preco:         R$ 50-5.000 (5.000-500.000 centavos)
+    //   duracao:       30-240 minutos (30 min a 4h)
     // -----------------------------------------------------------------
     match /servicos/{id} {
       allow read: if true;
 
       allow write: if autenticada()
         && dados().keys().hasOnly(
-             ['nome', 'descricao', 'duracaoMin', 'precoCentavos', 'ordem', 'ativo'])
+             ['nome', 'descricao', 'descricaoLonga', 'beneficios',
+              'duracaoMin', 'precoCentavos', 'ordem', 'ativo',
+              'slug', 'atualizadoEm', 'excluidoEm'])
         && textoSeguro(dados().nome, 2, 60)
         && textoOpcional('descricao', 200)
-        && inteiroEntre(dados().duracaoMin, 5, 600)
-        && inteiroEntre(dados().precoCentavos, 0, 100000000)   // teto R$ 1M
+        && textoOpcional('descricaoLonga', 2000)
+        && textoOpcional('slug', 60)
+        && (!('beneficios' in dados())
+            || (dados().beneficios is list && dados().beneficios.size() <= 6))
+        && inteiroEntre(dados().duracaoMin, 30, 240)
+        && inteiroEntre(dados().precoCentavos, 5000, 500000)
         && inteiroEntre(dados().ordem, 0, 999)
         && dados().ativo is bool;
     }
