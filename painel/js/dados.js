@@ -6,7 +6,7 @@
 // permite o modo demonstracao offline.
 // =====================================================================
 
-import { firebaseConfig, MODO_DEMO } from "./config.js?v=14";
+import { firebaseConfig, MODO_DEMO } from "./config.js?v=15";
 
 const CDN = "https://www.gstatic.com/firebasejs/10.12.2";
 
@@ -148,11 +148,27 @@ function paraObjeto(doc) {
 }
 
 // ---------------------------------------------------------------------
-// Criar agendamento
+// Criar agendamento — anti-overbooking em duas camadas
 //
-// Usa transacao para garantir que dois pedidos simultaneos nunca
-// ocupem o mesmo horario. Esta e a protecao real contra overbooking.
+// Camada 1 (fora da transacao): consulta 'ocupados' pra detectar
+// sobreposicao com horarios ja marcados. Rapida, dah feedback amigavel.
+//
+// Camada 2 (dentro da transacao): tx.get num LOCK deterministico cujo
+// id eh o timestamp de inicio em ms. Se dois pedidos com o mesmo
+// inicio caem em paralelo, so um vence — o SDK do Firestore garante
+// isso ao detectar mutacao concorrente no doc lido pela transacao.
+//
+// Combinacao: horarios com sobreposicao parcial (ex: 15h + 15h30 de
+// 60min cada) sao pegos pela camada 1. Horarios com mesmo instante
+// exato sao pegos pela camada 2, mesmo que a camada 1 tenha uma race
+// no meio.
 // ---------------------------------------------------------------------
+
+// ID deterministico pra o lock/espelho: o instante de inicio em ms.
+// Sanitiza pra caber em um id do Firestore (max 1500 bytes, sem '/').
+function chaveDoInicio(inicio) {
+  return "s_" + inicio.getTime();
+}
 
 export async function criarAgendamento(dados) {
   if (MODO_DEMO) return demo.criar(dados);
@@ -160,39 +176,48 @@ export async function criarAgendamento(dados) {
   const inicio = dados.inicio;
   const fim = new Date(inicio.getTime() + dados.duracaoMin * 60000);
 
-  // janela de busca: qualquer agendamento que possa se sobrepor
-  const margem = 4 * 60 * 60000;
+  // margem cobre a maior duracao possivel (240 min) mais folga
+  const margem = 5 * 60 * 60000;
   const janelaInicio = new Date(inicio.getTime() - margem);
   const janelaFim = new Date(fim.getTime() + margem);
 
-  // A checagem de conflito le o ESPELHO anonimo, nunca a colecao com
-  // dados pessoais. Assim o visitante do site nao precisa de permissao
-  // para ler nome ou telefone de ninguem.
+  // Camada 1: rejeita cedo se ja ha sobreposicao visivel. Le o ESPELHO
+  // anonimo, nunca a colecao com dados pessoais.
+  const q = fb.query(
+    fb.collection(db, "ocupados"),
+    fb.where("inicio", ">=", fb.Timestamp.fromDate(janelaInicio)),
+    fb.where("inicio", "<=", fb.Timestamp.fromDate(janelaFim))
+  );
+  const existentes = await fb.getDocs(q);
+  const sobrepoe = existentes.docs.some((d) => {
+    const a = d.data();
+    const ai = a.inicio.toDate().getTime();
+    const af = a.fim.toDate().getTime();
+    return ai < fim.getTime() && af > inicio.getTime();
+  });
+  if (sobrepoe) {
+    const e = new Error("HORARIO_OCUPADO");
+    e.codigo = "HORARIO_OCUPADO";
+    throw e;
+  }
+
+  // Camada 2: transacao com tx.get em id deterministico. Se dois
+  // pedidos batem no mesmo instante inicial, apenas um sai vitorioso.
+  const chave = chaveDoInicio(inicio);
+  const refEspelho = fb.doc(db, "ocupados", chave);
+  const ref = fb.doc(fb.collection(db, "agendamentos"));
+
   return fb.runTransaction(db, async (tx) => {
-    const q = fb.query(
-      fb.collection(db, "ocupados"),
-      fb.where("inicio", ">=", fb.Timestamp.fromDate(janelaInicio)),
-      fb.where("inicio", "<=", fb.Timestamp.fromDate(janelaFim))
-    );
-
-    const existentes = await fb.getDocs(q);
-    const conflito = existentes.docs.some((d) => {
-      const a = d.data();
-      const ai = a.inicio.toDate().getTime();
-      const af = a.fim.toDate().getTime();
-      return ai < fim.getTime() && af > inicio.getTime();
-    });
-
-    if (conflito) {
+    // tx.get NO ID DETERMINISTICO: se outro pedido escreveu esse mesmo
+    // espelho entre nosso getDocs e este ponto, o snapshot detecta e
+    // essa transacao eh rejeitada+retentada; na retentativa, snap.exists
+    // eh true e a levantamos HORARIO_OCUPADO.
+    const snap = await tx.get(refEspelho);
+    if (snap.exists()) {
       const e = new Error("HORARIO_OCUPADO");
       e.codigo = "HORARIO_OCUPADO";
       throw e;
     }
-
-    const ref = fb.doc(fb.collection(db, "agendamentos"));
-
-    // espelho com o MESMO id: facilita manter os dois em sincronia
-    const refEspelho = fb.doc(db, "ocupados", ref.id);
 
     tx.set(ref, {
       clienteNome: dados.clienteNome.trim(),
@@ -209,13 +234,16 @@ export async function criarAgendamento(dados) {
       precoCentavos: Number(dados.precoCentavos) || 0,
       // quantos minutos antes o cliente quer ser lembrado (0 = nao quer)
       lembreteMin: Number(dados.lembreteMin) || 0,
+      // guarda o id do agendamento correspondente pra manter sincronia
+      agendamentoId: ref.id,
       criadoEm: fb.serverTimestamp()
     });
 
     // SO horario: nenhum dado pessoal atravessa para o lado publico
     tx.set(refEspelho, {
       inicio: fb.Timestamp.fromDate(inicio),
-      fim: fb.Timestamp.fromDate(fim)
+      fim: fb.Timestamp.fromDate(fim),
+      agendamentoId: ref.id
     });
 
     // novo horario tomado invalida qualquer cache de "ocupados"
@@ -226,21 +254,59 @@ export async function criarAgendamento(dados) {
 
 // Mantem o espelho em sincronia quando o agendamento muda de estado.
 // Cancelado ou excluido libera o horario; remarcado move o bloqueio.
+//
+// O espelho usa id deterministico (chaveDoInicio) desde a v6. Docs
+// legados usam o id do proprio agendamento — sao localizados via
+// getDoc(agendamentoId). Cobre os dois formatos.
+//
+// A falha nao eh silenciosa: o toast do painel avisa quando o espelho
+// nao acompanha, e o log ajuda a diagnosticar.
 async function sincronizarEspelho(id, { inicio, fim, liberar } = {}) {
-  if (MODO_DEMO) return;
-  const ref = fb.doc(db, "ocupados", id);
+  if (MODO_DEMO) return { ok: true };
+
+  // 1) tenta pelo formato novo (id deterministico do inicio)
+  let refEspelho = null;
+  if (inicio) {
+    refEspelho = fb.doc(db, "ocupados", chaveDoInicio(inicio));
+  }
+
+  // 2) fallback: se nao temos inicio (caso "liberar" sem contexto),
+  //    procura pelo campo agendamentoId
+  if (!refEspelho || liberar) {
+    try {
+      const q = fb.query(
+        fb.collection(db, "ocupados"),
+        fb.where("agendamentoId", "==", id)
+      );
+      const snap = await fb.getDocs(q);
+      if (!snap.empty) {
+        refEspelho = snap.docs[0].ref;
+      }
+    } catch (erro) {
+      console.warn("sincronizarEspelho: busca falhou", erro?.code);
+    }
+  }
+
+  // 3) ultima tentativa: id legado (id do agendamento)
+  if (!refEspelho) {
+    refEspelho = fb.doc(db, "ocupados", id);
+  }
+
   try {
     if (liberar) {
-      await fb.deleteDoc(ref);
+      await fb.deleteDoc(refEspelho);
     } else if (inicio && fim) {
-      await fb.setDoc(ref, {
+      await fb.setDoc(refEspelho, {
         inicio: fb.Timestamp.fromDate(inicio),
-        fim: fb.Timestamp.fromDate(fim)
+        fim: fb.Timestamp.fromDate(fim),
+        agendamentoId: id
       });
     }
     cacheInvalidar("ocupados");
-  } catch {
-    // o espelho e um indice auxiliar: falhar aqui nao invalida a operacao
+    return { ok: true };
+  } catch (erro) {
+    console.warn("sincronizarEspelho: escrita falhou", erro?.code, id);
+    return { ok: false, erro: erro?.code };
   }
 }
 
@@ -254,35 +320,54 @@ export async function mudarStatus(id, status) {
   const ref = fb.doc(db, "agendamentos", id);
   await fb.updateDoc(ref, { status, atualizadoEm: fb.serverTimestamp() });
 
-  // cancelado libera o horario; reativado volta a ocupar
+  // cancelado libera o horario; reativado volta a ocupar. A sincronia
+  // com o espelho eh CRITICA para nao bloquear horarios livres nem
+  // liberar horarios ocupados; se falhar, propaga pro caller avisar.
+  let sync;
   if (status === "cancelado") {
-    await sincronizarEspelho(id, { liberar: true });
+    sync = await sincronizarEspelho(id, { liberar: true });
   } else {
-    try {
-      const snap = await fb.getDoc(ref);
-      if (snap.exists()) {
-        const d = snap.data();
-        await sincronizarEspelho(id, { inicio: d.inicio.toDate(), fim: d.fim.toDate() });
-      }
-    } catch { /* espelho e auxiliar */ }
+    const snap = await fb.getDoc(ref);
+    if (snap.exists()) {
+      const d = snap.data();
+      sync = await sincronizarEspelho(id, { inicio: d.inicio.toDate(), fim: d.fim.toDate() });
+    }
+  }
+  if (sync && !sync.ok) {
+    const e = new Error("ESPELHO_DESSINCRONIZADO");
+    e.codigo = "ESPELHO_DESSINCRONIZADO";
+    throw e;
   }
 }
 
 export async function remarcar(id, novoInicio, duracaoMin) {
   if (MODO_DEMO) return demo.remarcar(id, novoInicio, duracaoMin);
   const fim = new Date(novoInicio.getTime() + duracaoMin * 60000);
+  // libera o slot antigo antes de escrever no novo, pra nao ficar
+  // dois docs bloqueando o horario do mesmo cliente
+  const liberou = await sincronizarEspelho(id, { liberar: true });
   await fb.updateDoc(fb.doc(db, "agendamentos", id), {
     inicio: fb.Timestamp.fromDate(novoInicio),
     fim: fb.Timestamp.fromDate(fim),
     atualizadoEm: fb.serverTimestamp()
   });
-  await sincronizarEspelho(id, { inicio: novoInicio, fim });
+  const gravou = await sincronizarEspelho(id, { inicio: novoInicio, fim });
+  if (!liberou.ok || !gravou.ok) {
+    const e = new Error("ESPELHO_DESSINCRONIZADO");
+    e.codigo = "ESPELHO_DESSINCRONIZADO";
+    throw e;
+  }
 }
 
 export async function excluir(id) {
   if (MODO_DEMO) return demo.excluir(id);
   await fb.deleteDoc(fb.doc(db, "agendamentos", id));
-  await sincronizarEspelho(id, { liberar: true });
+  const sync = await sincronizarEspelho(id, { liberar: true });
+  if (!sync.ok) {
+    const e = new Error("ESPELHO_DESSINCRONIZADO");
+    e.codigo = "ESPELHO_DESSINCRONIZADO";
+    throw e;
+  }
 }
 
 // ---------------------------------------------------------------------
@@ -760,8 +845,28 @@ export async function definirPreco(id, precoCentavos) {
     return;
   }
   await fb.updateDoc(fb.doc(db, "agendamentos", id), {
-    precoCentavos: Number(precoCentavos) || 0
+    precoCentavos: Number(precoCentavos) || 0,
+    atualizadoEm: fb.serverTimestamp()
   });
+}
+
+// Concluir agendamento em UMA UNICA escrita: status + preco (se
+// aplicavel) juntos. Evita o estado intermediario "preco congelado
+// mas status ainda pendente" que a versao anterior podia deixar
+// caso a rede caisse entre os dois updates.
+export async function concluirAgendamento(id, precoCentavos) {
+  if (MODO_DEMO) {
+    const lista = demo.ler().map((a) =>
+      a.id === id ? { ...a, status: "concluido", precoCentavos: precoCentavos || a.precoCentavos } : a);
+    demo.gravar(lista);
+    return;
+  }
+  const patch = {
+    status: "concluido",
+    atualizadoEm: fb.serverTimestamp()
+  };
+  if (precoCentavos) patch.precoCentavos = Number(precoCentavos);
+  await fb.updateDoc(fb.doc(db, "agendamentos", id), patch);
 }
 
 export async function marcarLembreteEnviado(id) {

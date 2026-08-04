@@ -79,7 +79,9 @@ service cloud.firestore {
     match /servicos/{id} {
       allow read: if true;
 
-      allow write: if autenticada()
+      // create: regime estrito, valida tudo + whitelist. Assim novos
+      // servicos criados pelo painel sempre estao completos e corretos.
+      allow create: if autenticada()
         && dados().keys().hasOnly(
              ['nome', 'descricao', 'descricaoLonga', 'beneficios',
               'duracaoMin', 'precoCentavos', 'ordem', 'ativo',
@@ -94,6 +96,35 @@ service cloud.firestore {
         && inteiroEntre(dados().precoCentavos, 5000, 500000)
         && inteiroEntre(dados().ordem, 0, 999)
         && dados().ativo is bool;
+
+      // update: valida so os campos que ESTAO no patch (diff),
+      // permitindo campos legados coexistirem. Assim mover pra lixeira
+      // ou editar servico antigo funciona mesmo com precoTexto etc.
+      allow update: if autenticada()
+        && (!('nome' in request.resource.data.diff(resource.data).affectedKeys())
+            || textoSeguro(request.resource.data.nome, 2, 60))
+        && (!('descricao' in request.resource.data.diff(resource.data).affectedKeys())
+            || request.resource.data.descricao is string
+            && request.resource.data.descricao.size() <= 200)
+        && (!('descricaoLonga' in request.resource.data.diff(resource.data).affectedKeys())
+            || request.resource.data.descricaoLonga is string
+            && request.resource.data.descricaoLonga.size() <= 2000)
+        && (!('slug' in request.resource.data.diff(resource.data).affectedKeys())
+            || request.resource.data.slug is string
+            && request.resource.data.slug.size() <= 60)
+        && (!('beneficios' in request.resource.data.diff(resource.data).affectedKeys())
+            || (request.resource.data.beneficios is list
+                && request.resource.data.beneficios.size() <= 6))
+        && (!('duracaoMin' in request.resource.data.diff(resource.data).affectedKeys())
+            || inteiroEntre(request.resource.data.duracaoMin, 30, 240))
+        && (!('precoCentavos' in request.resource.data.diff(resource.data).affectedKeys())
+            || inteiroEntre(request.resource.data.precoCentavos, 5000, 500000))
+        && (!('ordem' in request.resource.data.diff(resource.data).affectedKeys())
+            || inteiroEntre(request.resource.data.ordem, 0, 999))
+        && (!('ativo' in request.resource.data.diff(resource.data).affectedKeys())
+            || request.resource.data.ativo is bool);
+
+      allow delete: if autenticada();
     }
 
     // -----------------------------------------------------------------
@@ -161,12 +192,14 @@ service cloud.firestore {
       allow read: if true;
 
       allow create: if autenticada() || (
-           dados().keys().hasOnly(['inicio', 'fim'])
+           dados().keys().hasOnly(['inicio', 'fim', 'agendamentoId'])
         && dados().inicio is timestamp
         && dados().fim is timestamp
         && dados().inicio < dados().fim
         && dados().inicio > request.time
         && dados().inicio < request.time + duration.value(90, 'd')
+        && (!('agendamentoId' in dados())
+            || (dados().agendamentoId is string && dados().agendamentoId.size() <= 40))
       );
 
       allow update, delete: if autenticada();

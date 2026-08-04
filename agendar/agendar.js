@@ -5,8 +5,8 @@
 
 // Cache-busting: incrementar a versao em toda mudanca em dados.js/config.js
 // para o navegador buscar o arquivo novo, ignorando cache HTTP e do disco.
-import { MODO_DEMO } from "../painel/js/config.js?v=14";
-import * as dados from "../painel/js/dados.js?v=14";
+import { MODO_DEMO } from "../painel/js/config.js?v=15";
+import * as dados from "../painel/js/dados.js?v=15";
 
 const $ = (s) => document.querySelector(s);
 const doisDig = (n) => String(n).padStart(2, "0");
@@ -16,6 +16,11 @@ const hhmm = (d) => `${doisDig(d.getHours())}:${doisDig(d.getMinutes())}`;
 // profissional configurar no painel
 let cfg = { ...dados.CONFIG_PADRAO };
 const DIAS_VISIVEIS = 14;
+
+// Guarda contra duplo submit (double-click, tecla espaco, hook duplicado).
+// So a primeira invocacao roda; qualquer chamada em paralelo eh ignorada
+// ate o submit terminar (sucesso ou erro).
+let enviando = false;
 
 const estado = {
   passo: 1,
@@ -248,11 +253,19 @@ async function montarHorarios() {
 
 async function lerOcupados(de, ate) {
   return new Promise((resolve) => {
-    // Leitura pontual: escuta e cancela em seguida.
-    // 'parar' e declarado antes porque o callback pode disparar de forma
-    // sincrona (modo demo), antes da atribuicao acontecer.
+    // Escuta e cancela em seguida. IMPORTANTE: precisamos IGNORAR o
+    // primeiro callback quando ele vem do cache local (sincrono), e
+    // resolver so no primeiro callback do servidor. Caso contrario,
+    // o cliente pode ver horario ja ocupado como livre por ate 60s.
+    //
+    // Estrategia: se o callback dispara sincrono (cache-hit), guardamos
+    // e continuamos escutando. So resolvemos quando um callback vem
+    // assincrono (do servidor) OU quando o timeout dispara.
     let parar = null;
     let respondido = false;
+    let ultimoCache = null;
+    let recebeuAssincrono = false;
+    const iniciou = Date.now();
 
     const responder = (lista) => {
       if (respondido) return;
@@ -261,15 +274,28 @@ async function lerOcupados(de, ate) {
       resolve(lista);
     };
 
-    // le o espelho anonimo: so horarios, sem dados de cliente
     parar = dados.observarOcupados(de, ate, (lista) => {
+      // heuristica: o callback do onSnapshot inicial sempre vem em
+      // < 5ms se for cache local; do servidor demora mais. Alem disso,
+      // marcamos que o primeiro callback JA chegou pra sabermos que os
+      // proximos sao atualizacoes (servidor). Nao dispara o resolve
+      // ate o segundo callback OU ate o timeout curto de servidor.
+      if (Date.now() - iniciou < 15) {
+        ultimoCache = lista || [];
+        return;
+      }
+      recebeuAssincrono = true;
       responder(lista || []);
     });
 
-    // se ja respondeu de forma sincrona, cancela a escuta agora
-    if (respondido) parar?.();
+    // Guarda a versao cache pra usar como fallback se o servidor demorar
+    // muito (funciona offline)
+    setTimeout(() => {
+      if (!recebeuAssincrono && ultimoCache) responder(ultimoCache);
+    }, 2000);
 
-    setTimeout(() => responder([]), 6000);
+    // Timeout absoluto: agenda vazia se nada respondeu em 6s
+    setTimeout(() => responder(ultimoCache || []), 6000);
   });
 }
 
@@ -362,34 +388,59 @@ function ligarFormulario() {
       return;
     }
 
+    // Bloqueia enviar offline: o SDK do Firestore enfileira writes
+    // offline e retenta ao voltar - o cliente iria embora achando que
+    // falhou, e o agendamento apareceria na agenda depois.
+    if (!navigator.onLine) {
+      erro.textContent = "Sem conexão com a internet. Reconecte e tente de novo.";
+      erro.hidden = false;
+      return;
+    }
+
+    // Guarda de duplo submit: se por qualquer bug o handler dispara
+    // duas vezes (double click, tecla espaco, hook), so a primeira roda.
+    if (enviando) return;
+    enviando = true;
     botao.disabled = true;
     botao.textContent = "Reservando...";
 
+    // Timeout absoluto: se o servidor nao respondeu em 20s, tratamos
+    // como erro. Assim evita o cenario "SDK enfileirou e retentou depois".
+    const abortar = new Promise((_, rej) => setTimeout(() =>
+      rej(Object.assign(new Error("TIMEOUT"), { codigo: "TIMEOUT" })), 20000));
+
     try {
-      await dados.criarAgendamento({
-        clienteNome: nome,
-        clienteContato: telefone,
-        lembreteMin,
-        servicoNome: estado.servico.nome,
-        duracaoMin: estado.servico.duracaoMin,
-        // o site NUNCA define preco: evita que alguem forje o valor
-        // do faturamento. O painel aplica o preco da tabela ao concluir.
-        precoCentavos: 0,
-        inicio: estado.hora,
-        observacoes: $("#obs").value.trim(),
-        status: "pendente",
-        origem: "site"
-      });
+      await Promise.race([
+        dados.criarAgendamento({
+          clienteNome: nome,
+          clienteContato: telefone,
+          lembreteMin,
+          servicoNome: estado.servico.nome,
+          duracaoMin: estado.servico.duracaoMin,
+          // o site NUNCA define preco: evita que alguem forje o valor
+          // do faturamento. O painel aplica o preco da tabela ao concluir.
+          precoCentavos: 0,
+          inicio: estado.hora,
+          observacoes: $("#obs").value.trim(),
+          status: "pendente",
+          origem: "site"
+        }),
+        abortar
+      ]);
       mostrarSucesso(nome);
     } catch (ex) {
       const ocupado = ex?.codigo === "HORARIO_OCUPADO"
         || /HORARIO_OCUPADO/.test(ex?.message || "");
+      const timeout = ex?.codigo === "TIMEOUT";
       erro.textContent = ocupado
         ? "Esse horário acabou de ser reservado. Escolha outro, por favor."
+        : timeout
+        ? "A internet está lenta demais e o servidor não respondeu. Tente de novo em instantes."
         : "Não foi possível concluir. Verifique sua conexão e tente de novo.";
       erro.hidden = false;
       botao.disabled = false;
       botao.textContent = "Confirmar agendamento";
+      enviando = false;
       if (ocupado) setTimeout(() => irPara(2), 1600);
     }
   });

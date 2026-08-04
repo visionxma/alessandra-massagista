@@ -4,8 +4,8 @@
 
 // Cache-busting: incrementar a versao em toda mudanca em dados.js/config.js
 // para o navegador buscar o arquivo novo, ignorando cache HTTP e do disco.
-import { MODO_DEMO } from "./config.js?v=14";
-import * as dados from "./dados.js?v=14";
+import { MODO_DEMO } from "./config.js?v=15";
+import * as dados from "./dados.js?v=15";
 
 // ---------------------------------------------------------------------
 // Atalhos e utilitarios
@@ -62,6 +62,11 @@ const estado = {
   cancelarEscutaBloqueios: null,
   cancelarEscutaConfig: null,
   cancelarEscutaServicos: null,
+  // intervalos de fundo (contagem regressiva e lembretes): guardados
+  // pra poder cancelar antes de recriar. Se abrirApp() rodar duas vezes
+  // (reconexao do Firebase, logout/login), sem isso empilhariam.
+  intervaloContagem: null,
+  intervaloLembretes: null,
   carregando: true
 };
 
@@ -346,10 +351,15 @@ async function abrirApp() {
     if (r?.atualizados) console.info(`Migracao: ${r.atualizados} servicos atualizados.`);
   }).catch(() => { /* migracao complementar, nunca invalida o painel */ });
 
-  setInterval(atualizarContagem, 30000);
-
+  // Cancela intervalos antigos antes de recriar. abrirApp() eh
+  // reentrante (Firebase pode re-emitir o estado de auth, e alguns
+  // fluxos internos re-chamam). Sem isso, cada reconexao empilhava
+  // um novo intervalo e a lista de lembretes piscava N vezes/min.
+  clearInterval(estado.intervaloContagem);
+  clearInterval(estado.intervaloLembretes);
+  estado.intervaloContagem = setInterval(atualizarContagem, 30000);
   // a fila de lembretes depende da hora atual: reavalia a cada minuto
-  setInterval(avisarLembretesPendentes, 60000);
+  estado.intervaloLembretes = setInterval(avisarLembretesPendentes, 60000);
 }
 
 // ---------------------------------------------------------------------
@@ -1054,15 +1064,29 @@ const NOMES_DIAS_LONGO = ["domingo", "segunda", "terça", "quarta", "quinta", "s
 
 function preencherAjustes() {
   const c = estado.config;
-  $("#cfg-abre").value = c.abreEm;
-  $("#cfg-fecha").value = c.fechaEm;
-  $("#cfg-intervalo").value = String(c.intervaloMin);
-  $("#cfg-antecedencia").value = String(c.antecedenciaMin);
+  // NAO sobrescreve o campo que a dona esta editando: um snapshot do
+  // Firestore pode chegar no meio da digitacao (proprio salvar, ou
+  // outro dispositivo). O foco vira o marcador do "esta editando".
+  const foco = document.activeElement;
+  const setIfIdle = (sel, valor) => {
+    const el = $(sel);
+    if (el && el !== foco) el.value = valor;
+  };
+  setIfIdle("#cfg-abre", c.abreEm);
+  setIfIdle("#cfg-fecha", c.fechaEm);
+  setIfIdle("#cfg-intervalo", String(c.intervaloMin));
+  setIfIdle("#cfg-antecedencia", String(c.antecedenciaMin));
 
-  const ativos = c.diasSemana || [0, 1, 2, 3, 4, 5, 6];
-  $("#cfg-dias").innerHTML = NOMES_DIAS.map((letra, i) => `
-    <button type="button" data-dia="${i}" aria-pressed="${ativos.includes(i)}"
-            aria-label="${NOMES_DIAS_LONGO[i]}">${letra}</button>`).join("");
+  // Dias da semana: so redesenha se ninguem esta clicando nos botoes
+  // (foco em algum [data-dia]). Assim evita o botao "levantar" no
+  // meio do toque.
+  const dentroDosDias = foco?.closest?.("#cfg-dias");
+  if (!dentroDosDias) {
+    const ativos = c.diasSemana || [0, 1, 2, 3, 4, 5, 6];
+    $("#cfg-dias").innerHTML = NOMES_DIAS.map((letra, i) => `
+      <button type="button" data-dia="${i}" aria-pressed="${ativos.includes(i)}"
+              aria-label="${NOMES_DIAS_LONGO[i]}">${letra}</button>`).join("");
+  }
 }
 
 function ligarAjustes() {
@@ -1663,8 +1687,12 @@ document.addEventListener("click", async (e) => {
           }
           fechar("#folha-detalhe");
           avisar(excluir ? "Registro excluído" : "Atendimento cancelado", "bom");
-        } catch {
-          avisar("Não foi possível concluir", "ruim");
+        } catch (err) {
+          if (err?.codigo === "ESPELHO_DESSINCRONIZADO") {
+            avisar("Cancelado aqui, mas o horário no site pode não ter liberado. Recarregue e confira.", "ruim");
+          } else {
+            avisar("Não foi possível concluir", "ruim");
+          }
         }
       }
     );
@@ -1682,23 +1710,26 @@ document.addEventListener("click", async (e) => {
   try {
     btn.disabled = true;
 
-    // Ao concluir um atendimento que veio do site (preco 0), aplica o
-    // preco atual da tabela. O valor fica congelado no historico, e o
-    // cliente nunca teve como definir esse numero.
-    if (novoStatus === "concluido" && !a.precoCentavos) {
-      const preco = precoDoServico(a.servicoNome);
-      if (preco) await dados.definirPreco(a.id, preco);
+    if (novoStatus === "concluido") {
+      // Concluir: uma unica escrita atomica (status + preco). Se veio
+      // do site com preco 0, aplica o preco atual da tabela ao congelar.
+      const preco = a.precoCentavos || precoDoServico(a.servicoNome);
+      await dados.concluirAgendamento(a.id, preco);
+    } else {
+      await dados.mudarStatus(a.id, novoStatus);
     }
-
-    await dados.mudarStatus(a.id, novoStatus);
     fechar("#folha-detalhe");
     avisar(
       { confirmado: "Atendimento confirmado", concluido: "Marcado como concluído" }[novoStatus]
         || "Atualizado",
       "bom"
     );
-  } catch {
-    avisar("Não foi possível atualizar", "ruim");
+  } catch (err) {
+    if (err?.codigo === "ESPELHO_DESSINCRONIZADO") {
+      avisar("Atualizei aqui, mas o horário no site pode não ter liberado. Recarregue e confira.", "ruim");
+    } else {
+      avisar("Não foi possível atualizar", "ruim");
+    }
   } finally {
     btn.disabled = false;
   }
