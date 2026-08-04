@@ -6,7 +6,7 @@
 // permite o modo demonstracao offline.
 // =====================================================================
 
-import { firebaseConfig, MODO_DEMO } from "./config.js?v=10";
+import { firebaseConfig, MODO_DEMO } from "./config.js?v=11";
 
 const CDN = "https://www.gstatic.com/firebasejs/10.12.2";
 
@@ -337,7 +337,11 @@ export function observarOcupados(deData, ateData, callback) {
 // ---------------------------------------------------------------------
 
 const CHAVE_ULTIMO_CLEANUP = "ocupados_cleanup_ultimo";
-const CHAVE_MIGRACAO_SERVICOS = "servicos_migracao_v2_aplicada";
+// v3: bump depois de identificar que o banco tinha precoTexto legado
+// (R$ 250/220/180...) vencendo o padrao no agendamento. A v3 corrige
+// precoCentavos E apaga precoTexto legado dos servicos que existem no
+// SERVICOS_PADRAO. Todo navegador autenticado roda a v3 uma vez.
+const CHAVE_MIGRACAO_SERVICOS = "servicos_migracao_v3_aplicada";
 const DIAS_MANTER_OCUPADOS = 60;
 
 // Migracao unica dos servicos legados: adiciona slug, ativo=true, e
@@ -386,6 +390,11 @@ export async function migrarServicosSePreciso() {
         const centavosPadrao = centavosDoTexto(padrao.precoTexto);
         if (centavosPadrao && atual.precoCentavos !== centavosPadrao) {
           patch.precoCentavos = centavosPadrao;
+        }
+        // precoTexto legado gravado no banco: apaga. A fonte da verdade
+        // eh o SERVICOS_PADRAO no codigo (normalizarServico ja aplica).
+        if (atual.precoTexto !== undefined) {
+          patch.precoTexto = fb.deleteField();
         }
       }
 
@@ -857,20 +866,29 @@ export async function lerServicos() {
 //   2. Se nao ha padrao (servico novo criado pelo painel), usa o que
 //      esta no banco: precoTexto explicito ou derivado de precoCentavos.
 // Preenche precoTexto e descricao. Prioridade:
-//   1. Dados do banco (o painel edita e vale imediatamente).
-//   2. Fallback: padrao pelo nome do servico.
+//   1. Se o nome bate com um servico do SERVICOS_PADRAO, o padrao vence
+//      (fonte da verdade dos precos oficiais). Blindagem contra docs
+//      antigos no banco com preco desatualizado (R$ 180/220/250 legados)
+//      que o site raiz e as LPs individuais ja mostram atualizados.
+//   2. Servico criado pela dona no painel (sem correspondencia no padrao):
+//      usa o que esta no banco, precoTexto explicito ou derivado dos centavos.
 // Servicos com ativo=false sao filtrados fora ANTES de chegar aqui.
 function normalizarServico(s) {
   const padrao = SERVICOS_PADRAO.find((p) => p.nome === s.nome);
 
-  const precoTexto = s.precoTexto
+  const precoTexto = padrao?.precoTexto
+    || s.precoTexto
     || (s.precoCentavos ? formatarPrecoDeCentavos(s.precoCentavos) : null)
-    || padrao?.precoTexto
     || "";
+
+  const precoCentavos = padrao?.precoTexto
+    ? centavosDoTexto(padrao.precoTexto)
+    : (s.precoCentavos || 0);
 
   return {
     ...s,
     precoTexto,
+    precoCentavos,
     descricao: s.descricao || padrao?.descricao || ""
   };
 }
