@@ -187,6 +187,16 @@ button { background: none; border: 0; cursor: pointer; }
   color: #f0a49c; font-size: 0.86rem;
 }
 
+/* Variante informativa (menos alarmante que o vermelho de erro).
+   Usada no aviso de "servico do padrao tem pagina no site". */
+.alerta--info {
+  background: rgba(212, 175, 111, 0.12);
+  color: #d4af6f;
+  border-left: 3px solid #d4af6f;
+  line-height: 1.45;
+}
+.alerta--info strong { color: #f0d097; }
+
 /* ---------------------------------------------------------------------
    Estrutura do app
    --------------------------------------------------------------------- */

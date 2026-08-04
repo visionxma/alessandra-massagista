@@ -4,8 +4,8 @@
 
 // Cache-busting: incrementar a versao em toda mudanca em dados.js/config.js
 // para o navegador buscar o arquivo novo, ignorando cache HTTP e do disco.
-import { MODO_DEMO } from "./config.js?v=13";
-import * as dados from "./dados.js?v=13";
+import { MODO_DEMO } from "./config.js?v=14";
+import * as dados from "./dados.js?v=14";
 
 // ---------------------------------------------------------------------
 // Atalhos e utilitarios
@@ -1153,6 +1153,13 @@ function abrirServico(servico = null) {
   $("#titulo-servico").textContent = servico ? "Editar serviço" : "Novo serviço";
   $("#srv-erro").hidden = true;
   $("#btn-excluir-srv").hidden = !servico;
+
+  // Aviso especifico: servico do padrao tambem tem uma pagina no site
+  // principal (a "vitrine"), que nao muda pelo painel. Alerta a dona
+  // pra evitar surpresa (cliente ve na LP e nao encontra no agendar).
+  const nomeDoPadrao = servico?.nome
+    && dados.SERVICOS_PADRAO.some((p) => p.nome === servico.nome);
+  $("#srv-aviso-padrao").hidden = !nomeDoPadrao;
 
   $("#srv-nome").value = servico?.nome || "";
   $("#srv-desc").value = servico?.descricao || "";

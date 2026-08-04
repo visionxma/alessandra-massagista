@@ -40,7 +40,7 @@
   <link rel="apple-touch-icon" href="icons/icone-180.png" />
   <link rel="icon" href="icons/icone-192.png" />
 
-  <link rel="stylesheet" href="css/painel.css?v=13" />
+  <link rel="stylesheet" href="css/painel.css?v=14" />
 </head>
 <body>
 
@@ -361,10 +361,10 @@
               <ul>
                 <li><strong>Adicionar:</strong> toque em "Adicionar" e preencha nome, descrição, duração e preço.</li>
                 <li><strong>Editar:</strong> toque em qualquer serviço da lista.</li>
-                <li><strong>Remover:</strong> toque no serviço → "Mover para lixeira". O serviço some do site mas fica na lixeira para restauração.</li>
-                <li><strong>Ativar/desativar:</strong> no formulário do serviço, use o botão "Serviço ativo". Se desligar, ele some do site sem ir pra lixeira.</li>
+                <li><strong>Remover:</strong> toque no serviço → "Mover para lixeira". Some do agendamento e fica na lixeira para restaurar depois.</li>
+                <li><strong>Ativar/desativar:</strong> no formulário do serviço, use o botão "Serviço ativo". Desligado, some do agendamento sem ir pra lixeira.</li>
               </ul>
-              <p class="ajuda__aviso">⚠️ Ao editar o <strong>nome</strong> do serviço, a URL da página no site (ex: /massagem-relaxante/) <strong>não muda</strong> — isso protege o ranking do Google.</p>
+              <p class="ajuda__aviso">⚠️ Suas mudanças aqui aparecem <strong>só no agendamento</strong>. As páginas principais do site (vitrine) continuam como estão — mudar elas exige chamar o desenvolvedor.</p>
             </div>
           </details>
 
@@ -581,9 +581,19 @@
       <div class="folha__corpo">
         <h2 class="folha__titulo" id="titulo-servico">Novo serviço</h2>
 
+        <!-- Aviso: aparece so quando o servico em edicao pertence ao padrao
+             (Nuru, Tantrica, Relaxante, Lingam, Mix, Spa dos Pes, Casais).
+             Deixa claro que a LP nao muda, so o agendamento. -->
+        <p class="alerta alerta--info" id="srv-aviso-padrao" hidden>
+          <strong>Atenção:</strong> este serviço também aparece nas páginas
+          principais do site (a "vitrine"). Mudanças aqui afetam <strong>só o
+          agendamento</strong> — o texto das páginas do site continua como
+          está. Se quiser mudar também a vitrine do site, chame o desenvolvedor.
+        </p>
+
         <form id="form-servico" novalidate>
           <label class="campo">
-            <span class="campo__rotulo">Nome <em>(aparece na LP e no agendamento)</em></span>
+            <span class="campo__rotulo">Nome <em>(aparece no agendamento)</em></span>
             <input type="text" id="srv-nome" required maxlength="60" placeholder="Ex.: Massagem relaxante" />
           </label>
 
@@ -594,13 +604,13 @@
           </label>
 
           <label class="campo">
-            <span class="campo__rotulo">Descrição curta <em>(cards da home e agendamento)</em></span>
+            <span class="campo__rotulo">Descrição curta <em>(aparece no agendamento, abaixo do nome)</em></span>
             <textarea id="srv-desc" rows="2" maxlength="200" placeholder="Uma frase de até 200 caracteres"></textarea>
           </label>
 
           <label class="campo">
-            <span class="campo__rotulo">Descrição longa <em>(texto principal da página do serviço)</em></span>
-            <textarea id="srv-desc-longa" rows="6" maxlength="2000" placeholder="Parágrafo(s) que explicam o serviço em detalhes. Aparece na página dedicada. Pode ter até 2000 caracteres."></textarea>
+            <span class="campo__rotulo">Descrição longa <em>(anotação interna, ainda não usada no site)</em></span>
+            <textarea id="srv-desc-longa" rows="6" maxlength="2000" placeholder="Fica guardada aqui pra uso futuro. Ainda não aparece em nenhum lugar visível pro cliente."></textarea>
           </label>
 
           <label class="campo">
@@ -631,7 +641,7 @@
           <label class="campo campo--toggle">
             <span class="campo__rotulo">Serviço ativo</span>
             <input type="checkbox" id="srv-ativo" checked />
-            <span class="ajuda">Se desligar, o serviço some da LP e do agendamento. Atendimentos já marcados continuam.</span>
+            <span class="ajuda">Se desligar, o serviço some do agendamento (a página da vitrine no site continua). Atendimentos já marcados continuam.</span>
           </label>
 
           <p class="alerta" id="srv-erro" hidden></p>
@@ -772,6 +782,6 @@
 
   <div class="aviso" id="aviso" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="js/painel.js?v=13"></script>
+  <script type="module" src="js/painel.js?v=14"></script>
 </body>
 </html>
