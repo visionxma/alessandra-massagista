@@ -28,7 +28,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="agendar.css" />
+  <link rel="stylesheet" href="agendar.css?v=16" />
 </head>
 <body>
 
@@ -102,7 +102,10 @@
                     placeholder="Preferências ou algo que eu deva saber"></textarea>
         </label>
         <p class="erro" id="erro" hidden></p>
-        <button class="btn" type="submit" id="enviar">Confirmar agendamento</button>
+        <div class="acoes-passo3">
+          <button class="btn btn--claro" type="button" id="btn-voltar-3">Voltar</button>
+          <button class="btn" type="submit" id="enviar">Confirmar agendamento</button>
+        </div>
         <p class="nota">Você receberá a confirmação do horário em seguida.</p>
       </form>
     </section>
@@ -126,6 +129,6 @@
     <button class="btn" id="btn-avancar" disabled>Continuar</button>
   </nav>
 
-  <script type="module" src="agendar.js?v=15"></script>
+  <script type="module" src="agendar.js?v=16"></script>
 </body>
 </html>

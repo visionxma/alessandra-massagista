@@ -5,8 +5,8 @@
 
 // Cache-busting: incrementar a versao em toda mudanca em dados.js/config.js
 // para o navegador buscar o arquivo novo, ignorando cache HTTP e do disco.
-import { MODO_DEMO } from "../painel/js/config.js?v=15";
-import * as dados from "../painel/js/dados.js?v=15";
+import { MODO_DEMO } from "../painel/js/config.js?v=16";
+import * as dados from "../painel/js/dados.js?v=16";
 
 const $ = (s) => document.querySelector(s);
 const doisDig = (n) => String(n).padStart(2, "0");
@@ -509,6 +509,11 @@ function ligarNavegacao() {
     if (estado.passo === 1 && estado.servico) irPara(2);
     else if (estado.passo === 2 && estado.hora) irPara(3);
   });
+
+  // Botao Voltar dentro do form do passo 3 (o rodape padrao fica
+  // oculto la, entao precisamos de um botao proprio pra corrigir
+  // servico ou horario sem perder os dados ja digitados).
+  $("#btn-voltar-3")?.addEventListener("click", () => irPara(2));
 
   $("#btn-voltar").addEventListener("click", () => {
     if (estado.passo > 1) irPara(estado.passo - 1);

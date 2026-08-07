@@ -334,6 +334,17 @@ h1 { font-family: var(--display); font-size: 1.5rem; font-weight: 500; margin-bo
 
 .rodape-acao .btn--claro { width: auto; padding-inline: 1.4rem; }
 
+/* Acoes do passo 3 (voltar + confirmar lado a lado, o rodape padrao
+   fica oculto la porque o form tem os proprios botoes) */
+.acoes-passo3 {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.6rem;
+  align-items: stretch;
+  margin-top: 0.4rem;
+}
+.acoes-passo3 .btn--claro { width: auto; padding-inline: 1.4rem; }
+
 /* ---------- sucesso ---------- */
 
 .sucesso { text-align: center; padding-top: 2rem; }
