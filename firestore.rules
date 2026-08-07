@@ -162,11 +162,14 @@ service cloud.firestore {
         && textoSeguro(dados().servicoNome, 1, 80);
 
       // criacao pelo site: regime estrito
+      // 'agendamentoId' foi adicionado na v15 (anti-overbooking): eh o
+      // proprio id do doc que estah sendo criado, guardado como campo
+      // pra facilitar sincronia com o espelho publico 'ocupados'.
       allow create: if !autenticada()
         && dados().keys().hasOnly(
              ['clienteNome', 'clienteContato', 'servicoNome', 'duracaoMin',
               'inicio', 'fim', 'status', 'observacoes', 'origem',
-              'precoCentavos', 'lembreteMin', 'criadoEm'])
+              'precoCentavos', 'lembreteMin', 'agendamentoId', 'criadoEm'])
         && dados().status == 'pendente'
         && dados().origem == 'site'
         && textoSeguro(dados().clienteNome, 2, 80)
@@ -182,7 +185,10 @@ service cloud.firestore {
         // o site nunca define preco (evita falsear faturamento);
         // o painel congela o preco depois, no atendimento
         && (!('precoCentavos' in dados()) || dados().precoCentavos == 0)
-        && (!('lembreteMin' in dados()) || inteiroEntre(dados().lembreteMin, 0, 10080));
+        && (!('lembreteMin' in dados()) || inteiroEntre(dados().lembreteMin, 0, 10080))
+        // agendamentoId precisa bater com o id do proprio doc (evita
+        // uso pra criar refs falsas)
+        && (!('agendamentoId' in dados()) || dados().agendamentoId == id);
     }
 
     // -----------------------------------------------------------------
