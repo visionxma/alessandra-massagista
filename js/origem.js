@@ -20,6 +20,14 @@ window.va = window.va || function () { (window.vaq = window.vaq || []).push(argu
     "spa-dos-pes": "spa dos pés"
   };
 
+  /* paginas que nao sao de servico: o nome vai inteiro na mensagem */
+  var PAGINAS = {
+    "massagista-padre-eustaquio": "página do Padre Eustáquio",
+    "massagista-lagoinha": "página da Lagoinha",
+    "massagista-bonfim": "página do Bonfim",
+    "massagista-centro-bh": "página do Centro"
+  };
+
   var origem = "";
   try {
     var utm = new URLSearchParams(location.search).get("utm_source");
@@ -28,7 +36,7 @@ window.va = window.va || function () { (window.vaq = window.vaq || []).push(argu
   } catch (e) { /* armazenamento bloqueado: segue sem guardar a origem */ }
 
   var slug = location.pathname.replace(/^\/+|\/+$/g, "").split("/").pop();
-  var pagina = NOMES[slug] ? "página de " + NOMES[slug] : "página inicial";
+  var pagina = NOMES[slug] ? "página de " + NOMES[slug] : (PAGINAS[slug] || "página inicial");
 
   var vim = origem === "instagram" ? "Vim pelo Instagram (" + pagina + ")" : "Vim pela " + pagina;
   var texto = "Olá, Alessandra. " + vim + " e gostaria de tirar uma dúvida.";

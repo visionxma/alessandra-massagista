@@ -1941,3 +1941,138 @@ a { color: inherit; text-decoration: none; }
   .servico,
   .faq__item { position: static; }
 }
+
+/* ==========================================================================
+   Paginas de bairro (item 11 do levantamento, 13/11/2026)
+   Tempo e distancia medidos no OpenStreetMap (OSRM), sem transito.
+   ========================================================================== */
+
+/* atalhos de bairro na secao de localizacao da inicial: 2 x 2 em qualquer largura */
+.local__bairros { margin: 0 0 1.6rem; }
+.local__bairros-titulo {
+  font-size: 0.68rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 0.7rem;
+}
+.local__bairros ul { list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.55rem; }
+.local__bairros a {
+  display: grid;
+  gap: 0.05rem;
+  min-height: 48px;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fdfcf9;
+  transition: border-color 0.3s ease, transform 0.3s var(--ease);
+}
+.local__bairros strong { font-weight: 500; font-size: 0.92rem; color: var(--ink); }
+.local__bairros span { font-size: 0.8rem; color: var(--ink-dim); }
+.local__bairros a:active { transform: scale(0.98); }
+
+/* secao "como chegar" das paginas de bairro */
+.rota { padding: clamp(3.5rem, 7vw, 5.5rem) 1.5rem; border-top: 1px solid var(--line); overflow-wrap: break-word; }
+.rota__inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(2rem, 5vw, 4.5rem);
+}
+.rota__head h2 { max-width: 20ch; }
+.rota__head > p { margin-top: 1.2rem; color: var(--ink-dim); max-width: 60ch; }
+.rota__fatos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.7rem; margin-top: 1.8rem; }
+.rota__fato {
+  display: grid;
+  gap: 0.2rem;
+  align-content: start;
+  padding: 1.05rem 1.15rem;
+  border-radius: var(--radius);
+  background: #fdfcf9;
+  border: 1px solid var(--line);
+  box-shadow: 0 10px 30px rgba(20, 17, 14, 0.05);
+}
+.rota__rotulo { font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); }
+.rota__valor { font-family: var(--font-display); font-size: clamp(1.45rem, 3vw, 2rem); line-height: 1.12; color: var(--ink); }
+.rota__nota { font-size: 0.85rem; line-height: 1.5; color: var(--ink-dim); }
+.rota__fonte { margin-top: 1rem; font-size: 0.8rem; color: var(--ink-dim); max-width: 60ch; }
+
+.rota__caminhos { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.2rem; align-content: start; }
+.rota__caminho {
+  padding: 1.6rem 1.5rem 0.6rem;
+  border-radius: var(--radius);
+  background: var(--branco-2);
+  border: 1px solid var(--line);
+}
+.rota__caminho h3 { font-size: 1.25rem; margin-bottom: 1.2rem; }
+.rota__passos { list-style: none; counter-reset: passo; margin-left: 0.9rem; border-left: 1px solid rgba(169, 126, 63, 0.45); }
+.rota__passos li { position: relative; counter-increment: passo; padding: 0 0 1.1rem 1.5rem; }
+.rota__passos li::before {
+  content: counter(passo);
+  position: absolute;
+  left: -0.9rem;
+  top: -0.1rem;
+  width: 1.8rem;
+  height: 1.8rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--branco);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.rota__passos strong { display: block; font-weight: 500; color: var(--ink); line-height: 1.4; }
+.rota__passos span { display: block; font-size: 0.88rem; color: var(--ink-dim); }
+
+/* atalhos para os servicos: 2 colunas no celular, 4 no computador */
+.atalhos { padding: clamp(3rem, 6vw, 4.5rem) 1.5rem; border-top: 1px solid var(--line); background: var(--branco-2); }
+.atalhos__inner { max-width: 1240px; margin: 0 auto; }
+.atalhos__inner h2 { max-width: 22ch; }
+.atalhos__grade { list-style: none; margin-top: 1.6rem; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
+.atalhos__grade a {
+  display: grid;
+  gap: 0.1rem;
+  height: 100%;
+  min-height: 48px;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  background: #fdfcf9;
+  border: 1px solid var(--line);
+  transition: border-color 0.3s ease, transform 0.3s var(--ease);
+}
+.atalhos__grade strong { font-weight: 500; font-size: 0.95rem; color: var(--ink); }
+.atalhos__grade span { font-size: 0.82rem; color: var(--ink-dim); }
+.atalhos__grade a:active { transform: scale(0.98); }
+
+@media (min-width: 64rem) {
+  .rota__inner { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+  .atalhos__grade { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .local__bairros a:hover,
+  .atalhos__grade a:hover { border-color: var(--gold); transform: translateY(-2px); }
+}
+
+/* revelar ao entrar na tela, so em CSS: sem suporte, o conteudo aparece normal */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .rota__fato, .rota__passos li, .atalhos__grade li {
+      animation: surge-bairro linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 45%;
+    }
+    @keyframes surge-bairro {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: none; }
+    }
+  }
+}
+
+@media (max-width: 47.99rem) {
+  .rota__caminho { padding: 1.3rem 1.1rem 0.4rem; }
+  .rota__fato { padding: 0.9rem 0.95rem; }
+}

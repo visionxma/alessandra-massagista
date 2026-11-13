@@ -17,6 +17,10 @@ PAGINAS=(
   "/massagem-mix/|massagem-mix/index.html|monthly|0.9"
   "/spa-dos-pes/|spa-dos-pes/index.html|monthly|0.9"
   "/massagem-para-casais/|massagem-para-casais/index.html|monthly|0.9"
+  "/massagista-padre-eustaquio/|massagista-padre-eustaquio/index.html|monthly|0.7"
+  "/massagista-lagoinha/|massagista-lagoinha/index.html|monthly|0.7"
+  "/massagista-bonfim/|massagista-bonfim/index.html|monthly|0.7"
+  "/massagista-centro-bh/|massagista-centro-bh/index.html|monthly|0.7"
 )
 
 # imagens da pagina inicial (bloco image:image preservado do sitemap anterior)
