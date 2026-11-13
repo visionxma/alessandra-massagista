@@ -25,7 +25,11 @@ window.va = window.va || function () { (window.vaq = window.vaq || []).push(argu
     "massagista-padre-eustaquio": "página do Padre Eustáquio",
     "massagista-lagoinha": "página da Lagoinha",
     "massagista-bonfim": "página do Bonfim",
-    "massagista-centro-bh": "página do Centro"
+    "massagista-centro-bh": "página do Centro",
+    "artigos": "página de artigos",
+    "quanto-custa-massagem-tantrica-em-bh": "artigo sobre o valor da massagem tântrica",
+    "diferenca-entre-nuru-e-tantrica": "artigo sobre nuru e tântrica",
+    "primeira-sessao-o-que-esperar": "artigo sobre a primeira sessão"
   };
 
   var origem = "";

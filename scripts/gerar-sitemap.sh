@@ -21,6 +21,10 @@ PAGINAS=(
   "/massagista-lagoinha/|massagista-lagoinha/index.html|monthly|0.7"
   "/massagista-bonfim/|massagista-bonfim/index.html|monthly|0.7"
   "/massagista-centro-bh/|massagista-centro-bh/index.html|monthly|0.7"
+  "/artigos/|artigos/index.html|weekly|0.6"
+  "/artigos/quanto-custa-massagem-tantrica-em-bh/|artigos/quanto-custa-massagem-tantrica-em-bh/index.html|monthly|0.7"
+  "/artigos/diferenca-entre-nuru-e-tantrica/|artigos/diferenca-entre-nuru-e-tantrica/index.html|monthly|0.7"
+  "/artigos/primeira-sessao-o-que-esperar/|artigos/primeira-sessao-o-que-esperar/index.html|monthly|0.7"
 )
 
 # imagens da pagina inicial (bloco image:image preservado do sitemap anterior)
