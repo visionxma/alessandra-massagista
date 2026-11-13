@@ -1,0 +1,30 @@
+# Regera o sitemap.xml a cada publicacao na main, com o lastmod real de cada pagina.
+# Roda so em push que muda uma pagina (nao em cron) e nao se dispara de novo
+# com o commit que ele mesmo faz.
+name: sitemap
+on:
+  push:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "*/index.html"
+permissions:
+  contents: write
+jobs:
+  sitemap:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: scripts/gerar-sitemap.sh
+      - name: Commit se mudou
+        run: |
+          if ! git diff --quiet sitemap.xml; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add sitemap.xml
+            git commit -m "Sitemap: lastmod atualizado na publicacao"
+            git push
+          fi
