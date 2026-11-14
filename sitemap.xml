@@ -3,7 +3,7 @@
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://alessandramassagista.com/</loc>
-    <lastmod>2026-07-28</lastmod>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <image:image>
@@ -12,7 +12,7 @@
       <image:caption>Massagista no bairro Carlos Prates, Belo Horizonte</image:caption>
     </image:image>
     <image:image>
-      <image:loc>https://alessandramassagista.com/assets/img/alessandra-espaco.png</image:loc>
+      <image:loc>https://alessandramassagista.com/assets/img/alessandra-espaco.webp</image:loc>
       <image:title>Espaço de massagem no bairro Carlos Prates</image:title>
       <image:caption>Ambiente reservado para massagem em Belo Horizonte</image:caption>
     </image:image>
@@ -35,50 +35,92 @@
   </url>
   <url>
     <loc>https://alessandramassagista.com/massagem-relaxante/</loc>
-    <lastmod>2026-07-28</lastmod>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://alessandramassagista.com/massagem-tantrica/</loc>
-    <lastmod>2026-07-28</lastmod>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://alessandramassagista.com/massagem-nuru/</loc>
-    <lastmod>2026-07-28</lastmod>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://alessandramassagista.com/massagem-lingam/</loc>
-    <lastmod>2026-07-28</lastmod>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://alessandramassagista.com/massagem-mix/</loc>
-    <lastmod>2026-07-28</lastmod>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://alessandramassagista.com/spa-dos-pes/</loc>
-    <lastmod>2026-07-28</lastmod>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://alessandramassagista.com/massagem-para-casais/</loc>
-    <lastmod>2026-07-28</lastmod>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://alessandramassagista.com/agendar/</loc>
-    <lastmod>2026-07-28</lastmod>
+    <loc>https://alessandramassagista.com/massagista-padre-eustaquio/</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://alessandramassagista.com/massagista-lagoinha/</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://alessandramassagista.com/massagista-bonfim/</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://alessandramassagista.com/massagista-centro-bh/</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://alessandramassagista.com/artigos/</loc>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://alessandramassagista.com/artigos/quanto-custa-massagem-tantrica-em-bh/</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://alessandramassagista.com/artigos/diferenca-entre-nuru-e-tantrica/</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://alessandramassagista.com/artigos/primeira-sessao-o-que-esperar/</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
 </urlset>
