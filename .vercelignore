@@ -2,3 +2,4 @@
 *.nao-publicar
 node_modules
 .github
+scripts
