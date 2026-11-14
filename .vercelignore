@@ -1,0 +1,4 @@
+.git-origem
+*.nao-publicar
+node_modules
+.github
